@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/crack-break-make/mcp-grimoire#readme",
   "scripts": {
+    "prepare": "husky",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "type-check": "tsc --noEmit",
