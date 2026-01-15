@@ -13,6 +13,7 @@
 **Problem**: Hybrid resolver returns confidence scores 0.3-1.0, unclear when to auto-spawn vs ask AI agent
 
 **Solution**: **3-tier confidence strategy** that leverages the AI agent's existing conversation context:
+
 - **High (≥0.85)**: Auto-spawn MCP server (instant, zero friction)
 - **Medium (0.5-0.84)**: Return 2-3 alternatives, let AI agent choose using conversation context
 - **Low (<0.5)**: Return top 5 matches with descriptions, AI agent can request clarification from user
@@ -62,12 +63,14 @@ Instead of trying to be smart in the gateway, **return structured data and let t
 ### Why This Works
 
 **The AI agent is MUCH smarter than our gateway**:
+
 - ✅ Has full conversation context (last 10 messages, user preferences, etc.)
 - ✅ Can read power descriptions and understand nuances
 - ✅ Can ask user clarifying questions naturally
 - ✅ Already designed for tool selection
 
 **Example**:
+
 ```
 User: "Check my DB for orders from last month"
 
@@ -121,6 +124,7 @@ Claude: "I'll query your PostgreSQL database..."
 ```
 
 **AI Agent Behavior**:
+
 - Sees tools are already activated
 - Proceeds directly to use them
 - **Zero friction** ✅
@@ -170,12 +174,14 @@ Claude: "I'll query your PostgreSQL database..."
 **AI Agent Behavior** (Examples):
 
 **Case A: Agent has context**
+
 ```
 Claude: "I see you have PostgreSQL, MySQL, and MongoDB. Based on our earlier conversation about your e-commerce app, I'll use PostgreSQL."
 Claude calls: activate_power({ name: "postgres" })
 ```
 
 **Case B: Agent needs clarification**
+
 ```
 Claude: "You have three database systems configured: PostgreSQL, MySQL, and MongoDB. Which one has the order data you're looking for?"
 User: "PostgreSQL"
@@ -224,12 +230,14 @@ Claude calls: activate_power({ name: "postgres" })
 **AI Agent Behavior**:
 
 **Case A: Agent understands from context**
+
 ```
 Claude: "Your query is a bit ambiguous, but based on our earlier discussion about sales metrics, I'll use the analytics tool."
 Claude calls: activate_power({ name: "analytics" })
 ```
 
 **Case B: Agent asks user**
+
 ```
 Claude: "I found several tools that might help analyze business performance:
 - Analytics (for reports and dashboards)
@@ -245,6 +253,7 @@ Claude calls: activate_power({ name: "stripe" })
 ```
 
 **Case C: Agent suggests rephrasing**
+
 ```
 Claude: "I'm not sure which tool you need for 'business performance'. Could you be more specific? For example:
 - 'Show sales data' (CRM)
@@ -281,6 +290,7 @@ Claude: "I'm not sure which tool you need for 'business performance'. Could you 
 ```
 
 **AI Agent Behavior**:
+
 ```
 Claude: "I couldn't find a tool for launching rockets. Your available tools are:
 - PostgreSQL (database queries)
@@ -319,6 +329,7 @@ To support the multi-tier strategy, add a new MCP tool:
 ```
 
 **Behavior**:
+
 1. Validate spell name exists
 2. Spawn MCP child server
 3. Get tools from child
@@ -327,6 +338,7 @@ To support the multi-tier strategy, add a new MCP tool:
 6. Return activated tools
 
 **Example Call**:
+
 ```typescript
 // Claude decides to use postgres after seeing alternatives
 await callTool('activate_power', { name: 'postgres' });
@@ -349,11 +361,13 @@ await callTool('activate_power', { name: 'postgres' });
 ### Week 1: Core Infrastructure
 
 **Day 1-2**: Update response format
+
 - Add `status` field to resolve_intent response
 - Add `matches` array for multiple results
 - Add `message` field for AI agent guidance
 
 **Day 3**: Implement confidence-based routing
+
 ```typescript
 class PowerGatewayServer {
   async handleResolveIntent(query: string) {
@@ -377,12 +391,14 @@ class PowerGatewayServer {
 ```
 
 **Day 4**: Implement `activate_power` tool
+
 - Add tool definition
 - Add handler in gateway
 - Spawn power on demand
 - Return tools
 
 **Day 5**: Integration testing
+
 - Test all confidence tiers
 - Test activate_power workflow
 - Test error cases
@@ -390,22 +406,26 @@ class PowerGatewayServer {
 ### Week 2: Testing & Validation
 
 **Day 1-2**: Create test scenarios
+
 - 20 high-confidence queries (should auto-spawn)
 - 20 medium-confidence queries (should return alternatives)
 - 20 low-confidence queries (weak matches)
 - 10 no-match queries (errors)
 
 **Day 3**: Measure accuracy
+
 - Run all test scenarios
 - Measure: correct tier selection, correct power in top-3
 - Target: >95% accuracy
 
 **Day 4**: Integration with real MCP servers
+
 - Test with actual postgres, stripe MCP servers
 - Verify spawning works
 - Verify tool routing works
 
 **Day 5**: Documentation
+
 - Update architecture.md
 - Create ADR-0009
 - Add examples to README
@@ -541,12 +561,12 @@ Savings: (40,000 - 1,166) / 40,000 = 97.1% token reduction
 
 ### Latency
 
-| Tier | Operation | Expected Latency |
-|------|-----------|------------------|
-| High | Hybrid search + auto-spawn | 50-300ms |
-| Medium | Hybrid search + return alternatives | 30-50ms |
-| Low | Hybrid search + return 5 candidates | 30-50ms |
-| None | Return error | <10ms |
+| Tier   | Operation                           | Expected Latency |
+| ------ | ----------------------------------- | ---------------- |
+| High   | Hybrid search + auto-spawn          | 50-300ms         |
+| Medium | Hybrid search + return alternatives | 30-50ms          |
+| Low    | Hybrid search + return 5 candidates | 30-50ms          |
+| None   | Return error                        | <10ms            |
 
 **Average**: ~100ms weighted by frequency
 
@@ -556,14 +576,15 @@ Savings: (40,000 - 1,166) / 40,000 = 97.1% token reduction
 
 Assuming hybrid resolver works correctly:
 
-| Tier | Correct Power in Results | User Friction |
-|------|-------------------------|---------------|
-| High (≥0.85) | 100% (top-1) | None ✅ |
-| Medium (0.5-0.84) | 95% (top-3) | 0-1 turn ⚠️ |
-| Low (<0.5) | 80% (top-5) | 1-2 turns ⚠️⚠️ |
-| None (<0.3) | N/A | Error message ❌ |
+| Tier              | Correct Power in Results | User Friction    |
+| ----------------- | ------------------------ | ---------------- |
+| High (≥0.85)      | 100% (top-1)             | None ✅          |
+| Medium (0.5-0.84) | 95% (top-3)              | 0-1 turn ⚠️      |
+| Low (<0.5)        | 80% (top-5)              | 1-2 turns ⚠️⚠️   |
+| None (<0.3)       | N/A                      | Error message ❌ |
 
 **Overall success rate**:
+
 ```
 = 0.70 × 1.00  (high confidence, correct)
 + 0.20 × 0.95  (medium confidence, correct in top-3)
@@ -581,6 +602,7 @@ Assuming hybrid resolver works correctly:
 ### Original Plan (From Document)
 
 ❌ **LLM-based disambiguation**: Gateway calls another LLM
+
 - Problem: Gateway has no LLM access
 - Problem: Adds latency (500-2000ms)
 - Problem: Adds cost ($0.0001 per query)
@@ -589,12 +611,14 @@ Assuming hybrid resolver works correctly:
 ### Proposed Plan
 
 ✅ **Leverage AI agent intelligence**: Return structured data, let agent decide
+
 - ✅ Gateway stays simple (no LLM needed)
 - ✅ Fast (just hybrid search, ~50ms)
 - ✅ No extra API costs
 - ✅ Agent has full conversation context
 
 **Architectural Principle**: "Do one thing well"
+
 - Gateway: Match query to powers (what it's good at)
 - AI Agent: Understand user intent (what it's good at)
 
@@ -605,36 +629,40 @@ Assuming hybrid resolver works correctly:
 ### Test Dataset (50 queries)
 
 **High Confidence (Expected auto-spawn)**:
+
 1. "query my postgres database"
 2. "create a stripe subscription"
 3. "list github repositories"
 4. "execute SQL query on postgresql"
 5. "charge customer with stripe"
-... (15 total)
+   ... (15 total)
 
 **Medium Confidence (Expected alternatives)**:
+
 1. "check my database"
 2. "process payment"
 3. "look at my code"
 4. "query data"
 5. "handle transaction"
-... (15 total)
+   ... (15 total)
 
 **Low Confidence (Expected weak matches)**:
+
 1. "analyze business performance"
 2. "show customer insights"
 3. "generate report"
 4. "check system status"
 5. "get metrics"
-... (15 total)
+   ... (15 total)
 
 **No Match (Expected error)**:
+
 1. "launch rocket"
 2. "fly to Mars"
 3. "hello world"
 4. "test"
 5. "asdfasdf"
-... (5 total)
+   ... (5 total)
 
 ### Success Criteria
 
@@ -652,6 +680,7 @@ Assuming hybrid resolver works correctly:
 **Risk**: Agent sees alternatives but doesn't call activate_power
 
 **Mitigation**:
+
 - Clear message in response: "Use activate_power(name) to select"
 - Tool description explicitly states: "Call this after resolve_intent returns multiple_matches"
 - Integration testing with real Claude Desktop
@@ -665,6 +694,7 @@ Assuming hybrid resolver works correctly:
 **Risk**: Too many queries fall in "uncertain" range, lots of user friction
 
 **Mitigation**:
+
 - Tune threshold based on validation data
 - Could narrow to 0.6-0.84 (push more to high confidence)
 - Monitor metrics in production, adjust
@@ -678,6 +708,7 @@ Assuming hybrid resolver works correctly:
 **Risk**: When confidence is <0.5, even top-5 results are wrong
 
 **Mitigation**:
+
 - Could lower threshold further (e.g., return matches if top-1 >0.4)
 - Or remove tier entirely, treat <0.5 as "no match"
 - Test with real queries to see distribution
@@ -702,6 +733,7 @@ Assuming hybrid resolver works correctly:
 **The Key Insight**: Grimoire doesn't need to be smart. The AI agent is already smart!
 
 **Our Job**:
+
 1. Fast, accurate matching (hybrid resolver) ✅
 2. Return structured results (confidence tiers) ✅
 3. Let agent decide based on conversation context ✅

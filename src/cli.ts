@@ -20,9 +20,9 @@ import {
 } from './cli/commands';
 
 // Read version from package.json
-const packageJson = JSON.parse(
-  readFileSync(join(__dirname, '../package.json'), 'utf-8')
-) as { version: string };
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as {
+  version: string;
+};
 
 const program = new Command();
 

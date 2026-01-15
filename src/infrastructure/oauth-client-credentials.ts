@@ -138,13 +138,14 @@ export class ClientCredentialsProvider {
     // Build request body (application/x-www-form-urlencoded)
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
-      ...(this.config.scope != null && this.config.scope.trim() !== '' && { scope: this.config.scope }),
+      ...(this.config.scope != null &&
+        this.config.scope.trim() !== '' && { scope: this.config.scope }),
     });
 
     // Basic Auth: base64(clientId:clientSecret)
-    const credentials = Buffer.from(
-      `${this.config.clientId}:${this.config.clientSecret}`
-    ).toString('base64');
+    const credentials = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString(
+      'base64'
+    );
 
     try {
       const response = await fetch(this.config.tokenUrl, {
@@ -164,9 +165,7 @@ export class ClientCredentialsProvider {
           error: errorBody,
         });
 
-        throw new Error(
-          `OAuth token request failed: ${response.status} ${response.statusText}`
-        );
+        throw new Error(`OAuth token request failed: ${response.status} ${response.statusText}`);
       }
 
       const tokenResponse = (await response.json()) as TokenResponse;

@@ -11,6 +11,7 @@ Accepted
 Grimoire must act as an MCP server to communicate with Claude Desktop via the Model Context Protocol.
 
 **The Architecture** (from architecture.md lines 110-121):
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Claude Desktop                       │
@@ -23,6 +24,7 @@ Grimoire must act as an MCP server to communicate with Claude Desktop via the Mo
 ```
 
 **Requirements**:
+
 - Implement MCP protocol correctly (tools/list, tools/call)
 - Handle stdio transport (Claude Desktop spawns via stdio)
 - Send notifications (tools/list_changed when powers activate/deactivate)
@@ -36,28 +38,30 @@ Grimoire must act as an MCP server to communicate with Claude Desktop via the Mo
 We will use **`@modelcontextprotocol/sdk`** version ^1.25.0 (official MCP SDK by Anthropic) to implement the gateway server.
 
 **Specific Choices**:
+
 - Use `McpServer` class (high-level API, not deprecated `Server`)
 - Import request schemas from SDK types
 - Use `StdioServerTransport` for Claude Desktop communication
 - Register handlers using schema objects (not string method names)
 
 **API Pattern**:
+
 ```typescript
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-const server = new McpServer({
-  name: 'mcp-grimoire',
-  version: '1.0.0',
-}, {
-  capabilities: {
-    tools: {},
+const server = new McpServer(
+  {
+    name: 'mcp-grimoire',
+    version: '1.0.0',
   },
-});
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
 
 // Use schemas, NOT strings
 server.setRequestHandler(ListToolsRequestSchema, (request) => {
@@ -103,12 +107,14 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
 ### Alternative 1: Implement MCP Protocol from Scratch
 
 **Pros**:
+
 - Full control over implementation
 - No external dependencies
 - Can optimize for our specific use case
 - Understanding of protocol internals
 
 **Cons**:
+
 - High development effort (~2-3 weeks)
 - Must maintain protocol compatibility ourselves
 - Must write all TypeScript types manually
@@ -121,11 +127,13 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
 ### Alternative 2: Use Lower-Level `Server` Class
 
 **Pros**:
+
 - More control over protocol details
 - SDK's original API
 
 **Cons**:
-- Deprecated (SDK warning: *"Use McpServer instead"*)
+
+- Deprecated (SDK warning: _"Use McpServer instead"_)
 - More boilerplate code required
 - Lower-level abstraction
 - Will be removed in future SDK versions
@@ -135,10 +143,12 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
 ### Alternative 3: Alternative MCP Implementation (Community)
 
 **Pros**:
+
 - Might be lighter weight
 - Could have different trade-offs
 
 **Cons**:
+
 - No known stable alternative exists
 - Would lack official support
 - Protocol compliance not guaranteed
@@ -151,6 +161,7 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
 ### Critical API Discovery
 
 **Initial Mistake** (from previous session):
+
 ```typescript
 // ❌ This causes TypeScript error
 server.setRequestHandler('tools/list', handler);
@@ -161,6 +172,7 @@ server.setRequestHandler('tools/list', handler);
 SDK v1.25.0+ changed `setRequestHandler` signature to use Zod schemas for type safety instead of string method names.
 
 **Correct Usage**:
+
 ```typescript
 //  ✅ Import schemas
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';

@@ -92,6 +92,7 @@ git checkout -b fix/issue-description
 ```
 
 **Branch naming conventions**:
+
 - `feature/description` - New features
 - `fix/description` - Bug fixes
 - `docs/description` - Documentation updates
@@ -114,6 +115,7 @@ Refs: #123
 ```
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -229,16 +231,22 @@ interface IntentResolver {
 }
 
 class KeywordResolver implements IntentResolver {
-  async resolve(query: string) { /* keyword logic */ }
+  async resolve(query: string) {
+    /* keyword logic */
+  }
 }
 
 class SemanticResolver implements IntentResolver {
-  async resolve(query: string) { /* semantic logic */ }
+  async resolve(query: string) {
+    /* semantic logic */
+  }
 }
 
 // New resolvers don't modify existing code
 class LLMResolver implements IntentResolver {
-  async resolve(query: string) { /* LLM logic */ }
+  async resolve(query: string) {
+    /* LLM logic */
+  }
 }
 ```
 
@@ -258,7 +266,9 @@ class Gateway {
 
 // Easy to test with mocks
 class MockConfigLoader implements ConfigLoader {
-  async load() { return mockConfig; }
+  async load() {
+    return mockConfig;
+  }
 }
 
 // ❌ BAD: Tight coupling
@@ -296,8 +306,8 @@ interface SpellConfig {}
 type ResolutionResult = string | null;
 
 // ❌ BAD
-class spellDiscovery {}  // Wrong case
-class PDEngine {}        // Abbreviations
+class spellDiscovery {} // Wrong case
+class PDEngine {} // Abbreviations
 interface ISpellConfig {} // No "I" prefix
 ```
 
@@ -307,13 +317,13 @@ interface ISpellConfig {} // No "I" prefix
 // ✅ GOOD: camelCase, descriptive
 function resolveIntent(query: string): string | null {}
 const activePowers = new Map();
-const isActive = true;  // Boolean with is/has/can prefix
+const isActive = true; // Boolean with is/has/can prefix
 
 // ❌ BAD
-function ResolveIntent() {}  // Wrong case
-function intent() {}         // Missing verb
-const ir = new IntentResolver();  // Abbreviation
-const active = true;         // Boolean without prefix
+function ResolveIntent() {} // Wrong case
+function intent() {} // Missing verb
+const ir = new IntentResolver(); // Abbreviation
+const active = true; // Boolean without prefix
 ```
 
 ---
@@ -366,6 +376,7 @@ src/
 ```
 
 **Rules**:
+
 - Higher layers depend on lower layers
 - Lower layers never import from higher layers
 - Domain layer has no external dependencies
@@ -375,7 +386,10 @@ src/
 ```typescript
 // ✅ GOOD: Custom error hierarchy
 class GrimoireError extends Error {
-  constructor(message: string, public code: string) {
+  constructor(
+    message: string,
+    public code: string
+  ) {
     super(message);
     this.name = 'GrimoireError';
   }
@@ -543,7 +557,7 @@ docs/adr/
 
 Document public APIs with JSDoc:
 
-```typescript
+````typescript
 /**
  * Resolve user query to spell name
  *
@@ -563,7 +577,7 @@ Document public APIs with JSDoc:
 async resolve(query: string, minConfidence = 0.5): Promise<string | null> {
   // Implementation
 }
-```
+````
 
 ---
 
@@ -572,6 +586,7 @@ async resolve(query: string, minConfidence = 0.5): Promise<string | null> {
 ### Before Submitting
 
 **Checklist**:
+
 - [ ] Tests pass (`pnpm test`)
 - [ ] Linting passes (`pnpm lint`)
 - [ ] Types compile (`pnpm type-check`)
@@ -586,18 +601,22 @@ Your PR should include:
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] New feature
 - [ ] Bug fix
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 Describe how you tested this
 
 ## Related Issues
+
 Fixes #123
 
 ## Screenshots (if applicable)

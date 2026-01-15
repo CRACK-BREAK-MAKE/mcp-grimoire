@@ -22,6 +22,7 @@ Grimoire supports connecting to **remote MCP servers** in addition to spawning l
 **Use Case**: Local MCP servers that run as child processes
 
 **Configuration**:
+
 ```yaml
 name: postgres-local
 version: 1.0.0
@@ -31,7 +32,7 @@ keywords:
   - sql
   - postgres
 server:
-  transport: stdio  # Can be omitted (default)
+  transport: stdio # Can be omitted (default)
   command: npx
   args:
     - '-y'
@@ -41,6 +42,7 @@ server:
 ```
 
 **How It Works**:
+
 - Grimoire spawns a child process using `child_process.spawn()`
 - Communicates via stdio (stdin/stdout)
 - Process is killed when power is deactivated
@@ -52,6 +54,7 @@ server:
 **Use Case**: Legacy remote MCP servers using Server-Sent Events
 
 **Configuration**:
+
 ```yaml
 name: test-sse-server
 version: 1.0.0
@@ -66,12 +69,14 @@ server:
 ```
 
 **How It Works**:
+
 - Grimoire connects to the remote server (NO spawning!)
 - Uses SSE for server-to-client messages
 - Server must already be running
 - Connection is closed when power is deactivated
 
 **Example Remote Server**:
+
 ```bash
 # Start your SSE MCP server first
 npx mcp-server-sse --port 8000
@@ -84,6 +89,7 @@ npx mcp-server-sse --port 8000
 **Use Case**: Modern remote MCP servers using Streamable HTTP protocol
 
 **Configuration**:
+
 ```yaml
 name: test-http-server
 version: 1.0.0
@@ -98,6 +104,7 @@ server:
 ```
 
 **How It Works**:
+
 - Uses `StreamableHTTPClientTransport` from MCP SDK
 - HTTP POST for client-to-server messages
 - HTTP GET + SSE for server-to-client events
@@ -106,6 +113,7 @@ server:
 - Connection is closed when power is deactivated
 
 **Example Remote Server**:
+
 ```bash
 # Start your HTTP MCP server first
 npx mcp-server-http --port 7777
@@ -115,15 +123,15 @@ npx mcp-server-http --port 7777
 
 ## Key Differences: Local vs Remote
 
-| Aspect | stdio (Local) | sse/http (Remote) |
-|--------|---------------|-------------------|
+| Aspect               | stdio (Local)                 | sse/http (Remote)                   |
+| -------------------- | ----------------------------- | ----------------------------------- |
 | **Process Spawning** | ✅ Yes - spawns child process | ❌ No - connects to existing server |
-| **Server Lifetime** | Managed by Grimoire | Independent |
-| **Configuration** | `command` + `args` | `url` |
-| **Network** | Local only | Can be remote |
-| **Latency** | Very low (~1ms) | Network-dependent (~10-100ms) |
-| **Overhead** | Memory per process | Network connections |
-| **Use Case** | Development, single-user | Production, multi-user |
+| **Server Lifetime**  | Managed by Grimoire           | Independent                         |
+| **Configuration**    | `command` + `args`            | `url`                               |
+| **Network**          | Local only                    | Can be remote                       |
+| **Latency**          | Very low (~1ms)               | Network-dependent (~10-100ms)       |
+| **Overhead**         | Memory per process            | Network connections                 |
+| **Use Case**         | Development, single-user      | Production, multi-user              |
 
 ---
 
@@ -131,7 +139,7 @@ npx mcp-server-http --port 7777
 
 ### From [mcp-server-spawning-clarification.md](./mcp-server-spawning-clarification.md):
 
-> **Remote servers are NOT spawned by Grimoire**. The gateway only *connects* to servers that are already running elsewhere.
+> **Remote servers are NOT spawned by Grimoire**. The gateway only _connects_ to servers that are already running elsewhere.
 
 This means:
 
@@ -141,6 +149,7 @@ This means:
 ### Why This Matters
 
 When using remote transports (sse/http):
+
 - ✅ The remote server must be started **before** Grimoire tries to connect
 - ✅ The server lifetime is **independent** of Grimoire
 - ✅ Multiple Grimoire instances can connect to the same server
@@ -178,6 +187,7 @@ server:
 ### Example 2: Development vs Production
 
 **Development** (local):
+
 ```yaml
 server:
   transport: stdio
@@ -186,6 +196,7 @@ server:
 ```
 
 **Production** (remote):
+
 ```yaml
 server:
   transport: http
@@ -199,17 +210,20 @@ server:
 Grimoire validates configurations based on transport type:
 
 ### stdio Validation
+
 - ✅ Requires: `command` (string)
 - ✅ Requires: `args` (array)
 - ✅ Optional: `env` (object)
 - ❌ Rejects: `url`
 
 ### sse/http Validation
+
 - ✅ Requires: `url` (valid URL)
 - ❌ Rejects: `command`, `args`
 - URL must be a valid HTTP/HTTPS URL
 
 Example validation errors:
+
 ```bash
 # Error: stdio missing command
 server:
@@ -229,12 +243,14 @@ server:
 ### 1. Start Your Remote Server
 
 **SSE Server**:
+
 ```bash
 # Example: Start an SSE server on port 8000
 node my-sse-server.js --port 8000
 ```
 
 **HTTP Server**:
+
 ```bash
 # Example: Start an HTTP server on port 7777
 node my-http-server.js --port 7777
@@ -258,7 +274,7 @@ server:
 ```javascript
 // Grimoire will connect (not spawn!) to your server
 const response = await gateway.handleResolveIntentCall({
-  query: 'test my remote server'
+  query: 'test my remote server',
 });
 
 // If matched, gateway connects and loads tools
@@ -277,6 +293,7 @@ if (response.status === 'activated') {
 **Cause**: Remote server is not running
 
 **Solution**:
+
 ```bash
 # Start your remote server first
 node your-server.js --port 8000
@@ -290,6 +307,7 @@ npx mcp-grimoire
 **Cause**: URL is malformed in configuration
 
 **Solution**:
+
 ```yaml
 # ❌ Bad
 url: localhost:8000
@@ -303,6 +321,7 @@ url: http://localhost:8000/mcp
 **Cause**: Using stdio config for remote transport
 
 **Solution**:
+
 ```yaml
 # ❌ Bad
 transport: http
@@ -318,16 +337,19 @@ url: http://localhost:7777/mcp
 ## Performance Considerations
 
 ### Local (stdio) Servers
+
 - **Pros**: Very low latency, direct process control
 - **Cons**: One process per activation, higher memory usage
 
 ### Remote (sse/http) Servers
+
 - **Pros**: Shared resources, centralized, scalable
 - **Cons**: Network latency, requires server infrastructure
 
 ### When to Use Remote
 
 Use remote transports when:
+
 - ✅ Server needs to be shared across multiple clients
 - ✅ Server requires significant resources (GPU, large datasets)
 - ✅ Server is maintained by another team
@@ -335,6 +357,7 @@ Use remote transports when:
 - ✅ Cloud deployment
 
 Use local (stdio) when:
+
 - ✅ Single-user development
 - ✅ Fast iteration needed
 - ✅ Offline operation required

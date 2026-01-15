@@ -41,7 +41,7 @@
   "lint-staged": {
     "*.ts": [
       "secretlint",
-      "eslint --fix",
+      "eslint --fix --max-warnings 0",
       "prettier --write"
     ],
     "*.{js,json,yaml,yml,md}": [

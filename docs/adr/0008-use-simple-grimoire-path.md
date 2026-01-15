@@ -12,12 +12,14 @@ Accepted
 MCP Grimoire needs to store spell configuration files (`.spell.yaml`) somewhere users can easily find, edit, and manage.
 
 **Observed Convention**: Claude Code stores its data in `~/.claude/` on all platforms (macOS, Windows, Linux). This approach:
+
 - Works identically across platforms via Node.js `os.homedir()`
 - Is familiar to CLI tool users (npm, docker, kubectl all use `~/.tool-name`)
 - Makes configs easy to find and version control
 - Avoids platform-specific complexity
 
 **Alternative Considered**: Platform-specific paths (macOS: `~/Library/Preferences/`, Windows: `%APPDATA%`, Linux: `~/.config/`)
+
 - Follows OS conventions for GUI apps
 - Adds complexity: requires `env-paths` dependency, platform detection, migration logic
 - Hides configs in system directories unfamiliar to CLI users
@@ -41,6 +43,7 @@ export function getSpellDirectory(): string {
 ```
 
 **Cross-Platform Behavior**:
+
 - **macOS**: `/Users/username/.grimoire/`
 - **Windows**: `C:\Users\username\.grimoire\`
 - **Linux**: `/home/username/.grimoire/`
@@ -78,12 +81,15 @@ Node.js `homedir()` handles platform differences automatically.
 ### Negative Consequences
 
 ❌ **Not Following GUI App Conventions**: Desktop apps typically use `~/Library` (macOS), `%APPDATA%` (Windows)
+
 - **Mitigation**: This is a CLI tool, not a GUI app. CLI tools universally use `~/.tool-name`
 
 ❌ **No XDG Support**: Linux users can't override via `$XDG_CONFIG_HOME`
+
 - **Mitigation**: Users can symlink if needed. XDG is nice-to-have for CLI tools, not required
 
 ❌ **Visible Dot Directory**: `.grimoire` folder visible in home directory
+
 - **Mitigation**: Standard practice for CLI tools. Users expect this.
 
 ## Alternatives Considered
@@ -91,6 +97,7 @@ Node.js `homedir()` handles platform differences automatically.
 ### Alternative 1: Platform-Specific Paths
 
 **Approach**: Use different paths per OS following GUI app conventions
+
 - macOS: `~/Library/Preferences/grimoire/`
 - Windows: `%APPDATA%\grimoire\`
 - Linux: `~/.config/grimoire/`
@@ -98,6 +105,7 @@ Node.js `homedir()` handles platform differences automatically.
 **Implementation**: Would require `env-paths` package or manual platform detection
 
 **Why rejected**:
+
 1. **Over-engineering**: Adds complexity for minimal user benefit
 2. **Deviates from CLI conventions**: npm, docker, kubectl don't do this
 3. **Migration burden**: Users' files already in `~/.grimoire`
@@ -119,15 +127,18 @@ Node.js `homedir()` handles platform differences automatically.
 ## Implementation
 
 **Changes**:
+
 1. `src/utils/paths.ts`: Use `join(homedir(), '.grimoire')` for all platforms
 2. `src/application/spell-discovery.ts`: Call `getSpellDirectory()` from paths.ts
 3. User spell files: Already in `~/.grimoire/*.spell.yaml` - no migration needed
 
 **Testing**:
+
 - Unit tests: Mock `homedir()` for each platform
 - Integration tests: Verify file discovery on macOS, Linux, Windows (via CI)
 
 **Documentation**:
+
 - README: Update path examples to show `~/.grimoire`
 - Quick start: `mkdir -p ~/.grimoire && cd ~/.grimoire`
 

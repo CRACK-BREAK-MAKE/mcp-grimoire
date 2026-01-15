@@ -4,8 +4,8 @@
  * Following TDD: Write tests first, then implement
  */
 
-import {describe, expect, it} from 'vitest';
-import {cosineSimilarity, dotProduct, magnitude, normalizeVector,} from '../vector-math';
+import { describe, expect, it } from 'vitest';
+import { cosineSimilarity, dotProduct, magnitude, normalizeVector } from '../vector-math';
 
 describe('Vector Math Utilities', () => {
   describe('dotProduct', () => {

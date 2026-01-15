@@ -3,10 +3,10 @@
  * Validate a spell configuration file
  */
 
-import {readFileSync} from 'fs';
-import {parse} from 'yaml';
-import type {SpellConfig} from '../../core/types';
-import {dim, formatError, formatSuccess, formatWarning} from '../utils/prompts';
+import { readFileSync } from 'fs';
+import { parse } from 'yaml';
+import type { SpellConfig } from '../../core/types';
+import { dim, formatError, formatSuccess, formatWarning } from '../utils/prompts';
 
 export function validateCommand(filePath: string): void {
   try {
@@ -18,8 +18,9 @@ export function validateCommand(filePath: string): void {
     try {
       config = parse(content);
     } catch (error) {
-       
-      console.error(formatError(`YAML Parse Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      console.error(
+        formatError(`YAML Parse Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      );
       process.exit(1);
     }
 
@@ -100,14 +101,18 @@ export function validateCommand(filePath: string): void {
                 if (typeof authType !== 'string' || authType.length === 0) {
                   errors.push('Missing required field: server.auth.type');
                 } else if (!['bearer', 'client_credentials', 'oauth2', 'none'].includes(authType)) {
-                  errors.push('Field "server.auth.type" must be one of: bearer, client_credentials, oauth2, none');
+                  errors.push(
+                    'Field "server.auth.type" must be one of: bearer, client_credentials, oauth2, none'
+                  );
                 }
 
                 // Phase 1: Bearer token validation
                 if (authType === 'bearer') {
                   const token = auth.token;
                   if (typeof token !== 'string' || token.length === 0) {
-                    errors.push('Missing required field: server.auth.token (required for bearer auth)');
+                    errors.push(
+                      'Missing required field: server.auth.token (required for bearer auth)'
+                    );
                   }
                 }
 
@@ -118,13 +123,19 @@ export function validateCommand(filePath: string): void {
                   const tokenUrl = auth.tokenUrl;
 
                   if (typeof clientId !== 'string' || clientId.length === 0) {
-                    errors.push('Missing required field: server.auth.clientId (required for client_credentials)');
+                    errors.push(
+                      'Missing required field: server.auth.clientId (required for client_credentials)'
+                    );
                   }
                   if (typeof clientSecret !== 'string' || clientSecret.length === 0) {
-                    errors.push('Missing required field: server.auth.clientSecret (required for client_credentials)');
+                    errors.push(
+                      'Missing required field: server.auth.clientSecret (required for client_credentials)'
+                    );
                   }
                   if (typeof tokenUrl !== 'string' || tokenUrl.length === 0) {
-                    errors.push('Missing required field: server.auth.tokenUrl (required for client_credentials)');
+                    errors.push(
+                      'Missing required field: server.auth.tokenUrl (required for client_credentials)'
+                    );
                   }
                 }
 
@@ -135,13 +146,19 @@ export function validateCommand(filePath: string): void {
                   const tokenUrl = auth.tokenUrl;
 
                   if (typeof clientId !== 'string' || clientId.length === 0) {
-                    errors.push('Missing required field: server.auth.clientId (required for oauth2)');
+                    errors.push(
+                      'Missing required field: server.auth.clientId (required for oauth2)'
+                    );
                   }
                   if (typeof authorizationUrl !== 'string' || authorizationUrl.length === 0) {
-                    errors.push('Missing required field: server.auth.authorizationUrl (required for oauth2)');
+                    errors.push(
+                      'Missing required field: server.auth.authorizationUrl (required for oauth2)'
+                    );
                   }
                   if (typeof tokenUrl !== 'string' || tokenUrl.length === 0) {
-                    errors.push('Missing required field: server.auth.tokenUrl (required for oauth2)');
+                    errors.push(
+                      'Missing required field: server.auth.tokenUrl (required for oauth2)'
+                    );
                   }
                 }
               }
@@ -188,13 +205,12 @@ export function validateCommand(filePath: string): void {
       process.exit(1);
     }
   } catch (error) {
-     
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       console.error(formatError(`File not found: ${filePath}`));
     } else {
       console.error(formatError(error instanceof Error ? error.message : 'Unknown error'));
     }
-     
+
     process.exit(1);
   }
 }

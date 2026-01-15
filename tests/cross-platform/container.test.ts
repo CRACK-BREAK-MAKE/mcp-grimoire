@@ -104,21 +104,13 @@ describe('Cross-Platform Container Tests', () => {
     });
 
     it('should pass TypeScript compilation', async () => {
-      const { exitCode, output } = await container.exec([
-        shell,
-        '-c',
-        'pnpm run type-check',
-      ]);
+      const { exitCode, output } = await container.exec([shell, '-c', 'pnpm run type-check']);
 
       expect(exitCode).toBe(0);
     }, 120_000);
 
     it('should pass all unit tests', async () => {
-      const { exitCode, output } = await container.exec([
-        shell,
-        '-c',
-        'pnpm test',
-      ]);
+      const { exitCode, output } = await container.exec([shell, '-c', 'pnpm test']);
 
       // Verify tests ran (even if some fail, most should pass)
       expect(output).toContain('Test Files');
@@ -138,11 +130,7 @@ describe('Cross-Platform Container Tests', () => {
     }, 180_000); // 3 minutes for tests
 
     it('should build successfully', async () => {
-      const { exitCode } = await container.exec([
-        shell,
-        '-c',
-        'pnpm run build',
-      ]);
+      const { exitCode } = await container.exec([shell, '-c', 'pnpm run build']);
 
       expect(exitCode).toBe(0);
 
@@ -311,11 +299,7 @@ EOF`,
     });
 
     it('should run tests on Windows', async () => {
-      const { exitCode } = await container.exec([
-        'powershell',
-        '-Command',
-        'pnpm test',
-      ]);
+      const { exitCode } = await container.exec(['powershell', '-Command', 'pnpm test']);
 
       expect(exitCode).toBe(0);
     }, 300_000);

@@ -11,6 +11,7 @@ Accepted
 We need to choose a programming language for implementing MCP Grimoire.
 
 **Project Requirements**:
+
 - Type safety to prevent bugs
 - Good IDE support and developer experience
 - Integration with Node.js ecosystem (MCP SDK is TypeScript)
@@ -18,6 +19,7 @@ We need to choose a programming language for implementing MCP Grimoire.
 - Maintainability for long-term development
 
 **Target Environment**:
+
 - Runs as Node.js process (spawned by Claude Desktop)
 - stdio communication with parent and child processes
 - Must work with `npx` (no installation required)
@@ -27,6 +29,7 @@ We need to choose a programming language for implementing MCP Grimoire.
 We will use **TypeScript** with strict mode enabled for all development.
 
 **Configuration**:
+
 ```json
 {
   "compilerOptions": {
@@ -45,6 +48,7 @@ We will use **TypeScript** with strict mode enabled for all development.
 ```
 
 **Tooling**:
+
 - **Linter**: ESLint with `@typescript-eslint` plugin
 - **Formatter**: Prettier
 - **Testing**: Jest with `ts-jest`
@@ -81,12 +85,14 @@ We will use **TypeScript** with strict mode enabled for all development.
 ### Alternative 1: Plain JavaScript (ES2022+)
 
 **Pros**:
+
 - No build step (faster development loop)
 - No type annotations (less code to write)
 - Simpler tooling setup
 - Immediate execution
 
 **Cons**:
+
 - No compile-time type checking
 - Poor IDE support (no autocomplete)
 - Harder to refactor safely
@@ -98,12 +104,14 @@ We will use **TypeScript** with strict mode enabled for all development.
 ### Alternative 2: Python
 
 **Pros**:
+
 - Strong typing with mypy
 - Great for ML/data work (if we add semantic search later)
 - Large standard library
 - Excellent for scripting
 
 **Cons**:
+
 - Not native to Node.js ecosystem
 - MCP SDK is JavaScript/TypeScript-first
 - Harder to integrate with Claude Desktop (expects Node.js)
@@ -115,12 +123,14 @@ We will use **TypeScript** with strict mode enabled for all development.
 ### Alternative 3: Go
 
 **Pros**:
+
 - Strongly typed
 - Excellent concurrency (good for process management)
 - Fast compilation and execution
 - Single binary distribution
 
 **Cons**:
+
 - No official MCP SDK for Go
 - Must implement MCP protocol from scratch
 - Not standard for MCP ecosystem
@@ -134,6 +144,7 @@ We will use **TypeScript** with strict mode enabled for all development.
 **Example from Development**:
 
 In gateway.ts, TypeScript caught this error immediately:
+
 ```typescript
 // ❌ ERROR caught at compile-time
 server.setRequestHandler('tools/list', handler);
@@ -143,6 +154,7 @@ server.setRequestHandler('tools/list', handler);
 Without TypeScript, this would have been a runtime error when Claude tried to connect, wasting hours of debugging.
 
 **With TypeScript**:
+
 ```typescript
 // ✅ Correct - TypeScript guides us to the right API
 import { ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';

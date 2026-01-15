@@ -13,7 +13,8 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import type { Request, Response, NextFunction } from 'express';
 
 const PORT = parseInt(process.argv[2] || '3400', 10);
-const TOKEN_INTROSPECTION_URL = process.env.TOKEN_INTROSPECTION_URL || 'http://localhost:3300/introspect';
+const TOKEN_INTROSPECTION_URL =
+  process.env.TOKEN_INTROSPECTION_URL || 'http://localhost:3300/introspect';
 
 // Create MCP server
 const getServer = () => {

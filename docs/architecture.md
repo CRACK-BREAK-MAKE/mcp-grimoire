@@ -634,6 +634,7 @@ async function resolveIntent(query) {
 The Grimoire CLI provides a comprehensive set of commands for managing spell configurations. It follows modern CLI best practices with interactive wizards, real-time validation, and colorful terminal output.
 
 **Design Philosophy**:
+
 - **User-friendly**: Interactive mode by default with guided workflows
 - **Automation-friendly**: Non-interactive mode for CI/CD
 - **Zero dependencies**: Uses Node.js built-in `readline` (no external prompt libraries)
@@ -647,6 +648,7 @@ The Grimoire CLI provides a comprehensive set of commands for managing spell con
 **Purpose**: Guide users through creating spell configurations with optional MCP server validation
 
 **Features**:
+
 - Step-by-step wizard with real-time validation
 - Support for all transport types (stdio, SSE, HTTP)
 - **Server probing**: Connects to MCP server to validate and auto-generate content
@@ -654,6 +656,7 @@ The Grimoire CLI provides a comprehensive set of commands for managing spell con
 - Creates intelligent steering instructions based on domain detection
 
 **Usage**:
+
 ```bash
 # Interactive mode (default)
 grimoire create
@@ -666,6 +669,7 @@ grimoire create -n postgres -t stdio --command npx --args "-y @org/server"
 ```
 
 **Interactive Flow**:
+
 1. **Spell Name**: Validates format `^[a-z0-9][a-z0-9-]*$`
 2. **Transport Type**: Choose from stdio, SSE, or HTTP with descriptions
 3. **Server Configuration**:
@@ -678,6 +682,7 @@ grimoire create -n postgres -t stdio --command npx --args "-y @org/server"
    - Creates steering instructions
 
 **Server Probing Algorithm**:
+
 ```javascript
 async function probeMCPServer(config) {
   // 1. Create MCP client based on transport
@@ -700,12 +705,14 @@ async function probeMCPServer(config) {
 ```
 
 **Auto-Generated Steering Structure**:
+
 1. **When to Use** (30-50 words): Use cases inferred from spell name and tools
 2. **Available Tools** (200 words max): One-line descriptions with required parameters
 3. **Recommended Workflow** (3 steps): Discovery → Action → Verify
 4. **Best Practices** (70-100 words): Domain-specific guidance
 
 **Domain Detection** (for best practices):
+
 - **Database**: postgres, mysql, sql → SQL injection warnings, parameterized queries
 - **API**: api, rest, http → Rate limiting, error handling
 - **Filesystem**: file, fs, read, write → Path traversal, permissions
@@ -713,6 +720,7 @@ async function probeMCPServer(config) {
 - **General**: Fallback for unrecognized patterns
 
 **Graceful Degradation**:
+
 - **stdio failures**: Non-fatal (command might not be installed yet)
 - **SSE/HTTP failures**: Fatal (no point creating spell for unreachable server)
 - **Network timeouts**: Clear error messages with suggestions
@@ -722,6 +730,7 @@ async function probeMCPServer(config) {
 **Purpose**: Display all installed spell configurations
 
 **Usage**:
+
 ```bash
 # Simple list (default)
 grimoire list
@@ -731,6 +740,7 @@ grimoire list -v
 ```
 
 **Output Format**:
+
 ```
 📚 Spells in ~/.grimoire
 
@@ -742,6 +752,7 @@ grimoire list -v
 ```
 
 **Verbose Mode**:
+
 ```
 🔮 postgres
    File: postgres.spell.yaml
@@ -756,11 +767,13 @@ grimoire list -v
 **Purpose**: Validate spell YAML files for correctness
 
 **Usage**:
+
 ```bash
 grimoire validate ~/.grimoire/postgres.spell.yaml
 ```
 
 **Validation Rules**:
+
 - **Required fields**: name, version, keywords, server.command/url
 - **Field types**: string, array, object
 - **Minimum keyword count**: 3
@@ -768,10 +781,12 @@ grimoire validate ~/.grimoire/postgres.spell.yaml
 - **Name format**: `^[a-z0-9][a-z0-9-]*$`
 
 **Exit Codes**:
+
 - `0`: Success (no errors)
 - `1`: Validation failed (has errors)
 
 **Output**:
+
 ```bash
 ✓ Validation Passed: postgres.spell.yaml
   No errors or warnings found.
@@ -788,6 +803,7 @@ grimoire validate ~/.grimoire/postgres.spell.yaml
 **Purpose**: Generate example spell templates for each transport type
 
 **Usage**:
+
 ```bash
 # Output to stdout
 grimoire example stdio
@@ -797,6 +813,7 @@ grimoire example stdio -o ~/.grimoire/myspell.spell.yaml
 ```
 
 **Templates**:
+
 - **stdio**: Local MCP servers (most common)
 - **SSE**: Real-time streaming servers
 - **HTTP**: REST-like HTTP servers
@@ -885,31 +902,34 @@ src/cli/
 **Functions**:
 
 1. **`text(options)`** - Text input with validation
+
    ```typescript
    const name = await text({
      message: 'What is your name?',
      default: 'anonymous',
-     validate: (value) => value.length > 0 || 'Name is required'
+     validate: (value) => value.length > 0 || 'Name is required',
    });
    ```
 
 2. **`select(options)`** - Multiple choice selection
+
    ```typescript
    const transport = await select({
      message: 'Choose transport',
      options: [
        { label: 'stdio', value: 'stdio', description: 'Standard I/O' },
-       { label: 'sse', value: 'sse', description: 'Server-Sent Events' }
+       { label: 'sse', value: 'sse', description: 'Server-Sent Events' },
      ],
-     default: 'stdio'
+     default: 'stdio',
    });
    ```
 
 3. **`confirm(options)`** - Yes/no confirmation
+
    ```typescript
    const shouldProbe = await confirm({
      message: 'Probe the server?',
-     default: true
+     default: true,
    });
    ```
 
@@ -922,6 +942,7 @@ src/cli/
    ```
 
 **Formatting Functions**:
+
 - `formatError(msg)` - Red ✗ prefix
 - `formatSuccess(msg)` - Green ✓ prefix
 - `formatWarning(msg)` - Yellow ⚠️ prefix
@@ -929,6 +950,7 @@ src/cli/
 - `bold(text)`, `dim(text)` - Text styling
 
 **Features**:
+
 - ANSI color support detection (TTY check)
 - Graceful degradation for non-TTY environments
 - Input validation with retry
@@ -937,6 +959,7 @@ src/cli/
 ### CLI Testing Strategy
 
 **Unit Tests**:
+
 - `create.test.ts`: Test wizard logic with mocked prompts
 - `list.test.ts`: Test spell discovery
 - `validate.test.ts`: Test validation rules
@@ -944,6 +967,7 @@ src/cli/
 - `prompts.test.ts`: Test prompt utilities
 
 **Integration Tests**:
+
 - `cli.comprehensive.integration.test.ts`: End-to-end CLI workflows
 - Test all transport types (stdio, SSE, HTTP)
 - Test with real test servers (`tests/fixtures/test-servers/`)
@@ -955,6 +979,7 @@ src/cli/
 **Decision: Use Node.js `readline` instead of external libraries**
 
 **Why**:
+
 - Zero dependencies reduces package size
 - Fast startup (<100ms)
 - No ESM/CommonJS conflicts
@@ -965,12 +990,14 @@ src/cli/
 **Decision: Server probing is optional**
 
 **Why stdio lenient, SSE/HTTP strict**:
+
 - **stdio**: Command might not be installed yet (e.g., `npx` will download on first use)
 - **SSE/HTTP**: Server must be reachable, otherwise spell is useless
 
 **Decision: Auto-generate steering from tools**
 
 **Why**:
+
 - Dramatically reduces manual work
 - Ensures consistency across spells
 - Improves intent resolution (keywords match tool names)
@@ -979,6 +1006,7 @@ src/cli/
 **Decision: ~/.grimoire for all platforms**
 
 **Why**:
+
 - Follows Claude Code convention (`~/.claude`)
 - Cross-platform simplicity (no `env-paths` needed)
 - Easy to find, backup, and version control

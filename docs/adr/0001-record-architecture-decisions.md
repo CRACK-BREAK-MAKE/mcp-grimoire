@@ -26,6 +26,7 @@ During the development of MCP Grimoire, we need to make many architectural decis
 **Real Example from this Project**:
 
 In the previous session, we discovered that:
+
 - We were implementing MCP gateway correctly using the SDK
 - But hit TypeScript errors and started creating a "simple" version
 - We forgot WHY we were using the SDK (it's the standard, maintained by Anthropic)
@@ -87,10 +88,12 @@ We will use **Architecture Decision Records (ADRs)** as defined by Michael Nygar
 ### Alternative 1: No Documentation
 
 **Pros**:
+
 - Fast development (no documentation overhead)
 - No process to follow
 
 **Cons**:
+
 - Lost context over time
 - Repeated discussions
 - Poor knowledge transfer
@@ -101,11 +104,13 @@ We will use **Architecture Decision Records (ADRs)** as defined by Michael Nygar
 ### Alternative 2: Design Documents
 
 **Pros**:
+
 - More detailed than ADRs
 - Can include diagrams, code samples
 - Good for complex systems
 
 **Cons**:
+
 - Time-consuming to write and maintain
 - Often become outdated
 - Hard to keep synchronized with code
@@ -116,11 +121,13 @@ We will use **Architecture Decision Records (ADRs)** as defined by Michael Nygar
 ### Alternative 3: Wiki or Notion
 
 **Pros**:
+
 - Easy to edit and update
 - Rich formatting options
 - Good search capabilities
 
 **Cons**:
+
 - Not versioned with code
 - Can diverge from reality
 - Requires external tool/service
@@ -131,11 +138,13 @@ We will use **Architecture Decision Records (ADRs)** as defined by Michael Nygar
 ### Alternative 4: Comments in Code
 
 **Pros**:
+
 - Close to implementation
 - Always up to date (hopefully)
 - No separate documentation
 
 **Cons**:
+
 - Scattered across codebase
 - Hard to find decisions
 - No structured format

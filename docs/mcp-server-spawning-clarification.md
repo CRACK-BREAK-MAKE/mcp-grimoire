@@ -19,6 +19,7 @@ Date: 2026-01-11
 ### 1. Local MCP Servers
 
 **Configuration**:
+
 ```json
 {
   "mcpServers": {
@@ -35,6 +36,7 @@ Date: 2026-01-11
 ```
 
 **What Happens at Startup**:
+
 1. Claude Desktop reads `claude_desktop_config.json`
 2. **SPAWNS ALL configured servers** as child processes
 3. Establishes stdio connection to each
@@ -42,12 +44,14 @@ Date: 2026-01-11
 5. Loads ALL tools into context (~40,000 tokens for 50 servers)
 
 **Result**:
+
 - All 50 processes running immediately
 - All tools loaded into AI context
 - High memory usage (~2GB+)
 - Slow startup (~5 seconds)
 
 **Source**:
+
 > "Claude Desktop reads the claude_desktop_config.json file on startup and launches all servers declared in it, making tools available in the app when it starts" - [Claude Docs](https://github.com/anthropics/claude-desktop-config)
 
 ---
@@ -55,6 +59,7 @@ Date: 2026-01-11
 ### 2. Remote MCP Servers
 
 **Configuration**:
+
 ```json
 {
   "mcpServers": {
@@ -67,15 +72,18 @@ Date: 2026-01-11
 ```
 
 **What Happens at Startup**:
+
 1. Claude Desktop reads config
 2. **SPAWNS `mcp-remote` proxy process** (NOT the MCP server itself)
 3. The `mcp-remote` process **connects** to an already-running remote server
 4. The remote server was already running on a cloud service (e.g., `https://mcp.stripe.com`)
 
 **What `mcp-remote` Is**:
+
 > "mcp-remote is a local proxy that allows MCP clients like Claude Desktop to connect to remote authorized servers even when those clients don't yet support remote transport or OAuth flows directly" - [MCP Remote Docs](https://github.com/modelcontextprotocol/mcp-remote)
 
 **Result**:
+
 - Local proxy process spawned (small overhead)
 - Remote MCP server is NOT spawned (already running)
 - Tools still loaded into context (token overload persists)
@@ -133,6 +141,7 @@ Date: 2026-01-11
 ```
 
 **Result**:
+
 - 50 child processes spawned at startup
 - ~40,000 tokens consumed
 - ~2GB+ memory usage
@@ -154,6 +163,7 @@ Date: 2026-01-11
 ```
 
 **Result**:
+
 - 1 process spawned at startup (Grimoire)
 - ~200 tokens consumed initially (just `resolve_intent` tool)
 - Gateway spawns child servers **on-demand** based on user intent
@@ -174,6 +184,7 @@ Grimoire Phase 1 does **NOT** solve token overload for remote servers because:
 3. Would need a different architecture (tool filtering/proxy at protocol level)
 
 **Example**:
+
 ```json
 {
   "mcpServers": {
@@ -187,11 +198,13 @@ Grimoire Phase 1 does **NOT** solve token overload for remote servers because:
 ```
 
 In this setup:
+
 - Grimoire helps with LOCAL servers
 - Remote stripe still loads ALL tools at startup
 - Token overload from remote tools persists
 
 **Future Enhancement**: Phase 6+ could add remote server support by:
+
 - Gateway acting as protocol-level proxy
 - Filtering tools based on intent before exposing to Claude
 - Requires understanding of SSE transport and OAuth flows
@@ -221,6 +234,7 @@ In this setup:
 ## Decision Impact
 
 This clarification led to **ADR-0004: Focus on Local MCP Servers Only (Phase 1)**, which scopes Grimoire to:
+
 - ✅ Local MCP servers (spawned via `npx` or `node`)
 - ❌ Remote MCP servers (accessed via `mcp-remote`)
 - ✅ 95% of user scenarios

@@ -11,6 +11,7 @@ Proposed
 Analysis of real-world authenticated MCP servers and APIs shows a clear usage pattern:
 
 **Authentication Methods in Practice:**
+
 - **80%** use simple API keys via Bearer tokens (GitHub, Stripe, most SaaS APIs)
 - **15%** use OAuth Client Credentials for machine-to-machine authentication
 - **5%** require full OAuth 2.1 with user consent flows
@@ -27,12 +28,14 @@ Analysis of real-world authenticated MCP servers and APIs shows a clear usage pa
 **MCP SDK Capabilities:**
 
 The MCP SDK supports both approaches:
+
 - Bearer tokens via `requestInit` headers (simple, direct)
 - OAuth 2.1 via `authProvider` interface (complex, requires token management)
 
 **User Impact:**
 
 Currently, users cannot connect to ANY authenticated remote servers. This is a complete blocker for:
+
 - Public SaaS APIs (Stripe, GitHub, etc.)
 - Internal enterprise APIs
 - Cloud service integrations
@@ -45,15 +48,17 @@ Implement **Bearer token authentication (Phase 1) first**, then OAuth Client Cre
 ### Phase 1 Implementation Details
 
 1. **Add `AuthConfig` type** with bearer token support
+
    ```typescript
    interface AuthConfig {
      type: 'bearer' | 'client_credentials' | 'oauth2' | 'none';
-     token?: string;  // For Bearer tokens
+     token?: string; // For Bearer tokens
      // OAuth fields for later phases
    }
    ```
 
 2. **Implement `buildAuthHeaders()`** to add Authorization header
+
    ```typescript
    function buildAuthHeaders(
      customHeaders?: Record<string, string>,
@@ -104,11 +109,13 @@ Implement **Bearer token authentication (Phase 1) first**, then OAuth Client Cre
 ### Alternative 1: Implement OAuth 2.1 First
 
 **Pros:**
+
 - Full spec compliance immediately
 - Single authentication mechanism
 - Professional enterprise solution
 
 **Cons:**
+
 - Over-engineering for 80% of users (YAGNI violation)
 - Much more complex implementation (higher risk)
 - Longer time to deliver working solution
@@ -119,11 +126,13 @@ Implement **Bearer token authentication (Phase 1) first**, then OAuth Client Cre
 ### Alternative 2: Support Only OAuth, No Bearer Tokens
 
 **Pros:**
+
 - Single mechanism to learn and document
 - Forces best practices
 - OAuth provides better security features
 
 **Cons:**
+
 - Forces unnecessary complexity on majority of users
 - Worse onboarding experience
 - Many APIs don't support OAuth (only API keys)
@@ -134,10 +143,12 @@ Implement **Bearer token authentication (Phase 1) first**, then OAuth Client Cre
 ### Alternative 3: Support Query Parameter Tokens
 
 **Pros:**
+
 - Some legacy APIs use this pattern
 - Simple to implement
 
 **Cons:**
+
 - **MAJOR SECURITY RISK** - Tokens appear in logs, browser history, etc.
 - **MCP spec explicitly forbids** tokens in query strings
 - Encourages bad security practices
@@ -148,6 +159,7 @@ Implement **Bearer token authentication (Phase 1) first**, then OAuth Client Cre
 ## Implementation Priority
 
 Phase 1 (Bearer tokens) covers:
+
 - GitHub API (`GITHUB_PERSONAL_ACCESS_TOKEN`)
 - Stripe API (`STRIPE_API_KEY`)
 - Most REST APIs with simple API keys
@@ -155,11 +167,13 @@ Phase 1 (Bearer tokens) covers:
 - **80% of real-world use cases**
 
 Phase 2 (OAuth Client Credentials) adds:
+
 - Machine-to-machine OAuth
 - Auth0, Okta, Azure AD service principals
 - **15% of real-world use cases**
 
 Phase 3 (OAuth Authorization Code + PKCE) adds:
+
 - User-based OAuth flows
 - Browser-based consent
 - **5% of real-world use cases (mostly SaaS integrations)**

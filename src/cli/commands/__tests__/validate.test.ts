@@ -539,7 +539,9 @@ server:
         expect.stringContaining('Missing recommended field: description')
       );
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('warning(s) found (non-critical)'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('warning(s) found (non-critical)')
+      );
     });
 
     it('should warn when stdio is missing args field', async () => {
@@ -622,9 +624,7 @@ server:
         await validateCommand(filePath);
       }).rejects.toThrow('Process.exit called with code 1');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('YAML Parse Error:')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('YAML Parse Error:'));
     });
 
     it('should fail when file is not an object', async () => {

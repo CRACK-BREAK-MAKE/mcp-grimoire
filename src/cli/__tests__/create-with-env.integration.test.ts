@@ -52,7 +52,10 @@ describe('CLI create command with environment variables', () => {
     expect(config.name).toBe(spellName);
     expect(config.server.transport).toBe('stdio');
     expect(config.server.command).toBe('npx');
-    expect(config.server.args).toEqual(['tsx', 'tests/fixtures/test-servers/stdio-auth-test-server.ts']);
+    expect(config.server.args).toEqual([
+      'tsx',
+      'tests/fixtures/test-servers/stdio-auth-test-server.ts',
+    ]);
     expect(config.server.env).toEqual({
       TEST_API_KEY: 'test-secret-key-123',
     });

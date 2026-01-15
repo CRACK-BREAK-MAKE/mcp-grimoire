@@ -67,11 +67,21 @@ function getPaths(): EnvPaths {
  * All platforms: ~/.grimoire/
  */
 export const PATHS = {
-  get config() { return getPaths().config; },
-  get cache() { return getPaths().cache; },
-  get log() { return getPaths().log; },
-  get data() { return getPaths().data; },
-  get temp() { return getPaths().temp; },
+  get config() {
+    return getPaths().config;
+  },
+  get cache() {
+    return getPaths().cache;
+  },
+  get log() {
+    return getPaths().log;
+  },
+  get data() {
+    return getPaths().data;
+  },
+  get temp() {
+    return getPaths().temp;
+  },
 } as const;
 
 /**
@@ -113,7 +123,7 @@ export async function ensureDirectories(): Promise<void> {
     // Set restrictive permissions on Unix systems
     // Windows uses ACL inheritance from parent
     if (process.platform !== 'win32') {
-      await chmod(grimoireDir, 0o700);  // Owner read/write/execute only
+      await chmod(grimoireDir, 0o700); // Owner read/write/execute only
     }
 
     // Success (no logging here - gateway will log)

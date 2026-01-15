@@ -313,7 +313,10 @@ describe('Spell Templates', () => {
         expect(config.version, `${name} should have version`).toBe('1.0.0');
         expect(config.description, `${name} should have description`).toBeDefined();
         expect(config.keywords, `${name} should have keywords`).toBeDefined();
-        expect(config.keywords.length, `${name} should have at least 3 keywords`).toBeGreaterThanOrEqual(3);
+        expect(
+          config.keywords.length,
+          `${name} should have at least 3 keywords`
+        ).toBeGreaterThanOrEqual(3);
         expect(config.server, `${name} should have server`).toBeDefined();
         expect(config.server.transport, `${name} should have transport`).toBeDefined();
         expect(config.steering, `${name} should have steering`).toBeDefined();

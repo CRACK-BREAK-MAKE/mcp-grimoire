@@ -4,11 +4,11 @@
  * Following TDD: Write tests first, then implement
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
-import {join} from 'path';
-import {tmpdir} from 'os';
-import {access, mkdir, rm} from 'fs/promises';
-import {EmbeddingStorage} from '../embedding-storage';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { access, mkdir, rm } from 'fs/promises';
+import { EmbeddingStorage } from '../embedding-storage';
 
 describe('EmbeddingStorage', () => {
   let testCacheDir: string;

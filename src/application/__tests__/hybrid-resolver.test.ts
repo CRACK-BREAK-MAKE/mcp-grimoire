@@ -4,14 +4,14 @@
  * Following TDD: Write tests first, then implement
  */
 
-import {beforeAll, beforeEach, describe, expect, it, afterEach} from 'vitest';
-import {HybridResolver} from '../hybrid-resolver';
-import {EmbeddingService} from '../../infrastructure/embedding-service';
-import {EmbeddingStorage} from '../../infrastructure/embedding-storage';
-import type {SpellConfig} from '../../core/types';
-import {tmpdir} from 'os';
-import {join} from 'path';
-import {mkdir, rm} from 'fs/promises';
+import { beforeAll, beforeEach, describe, expect, it, afterEach } from 'vitest';
+import { HybridResolver } from '../hybrid-resolver';
+import { EmbeddingService } from '../../infrastructure/embedding-service';
+import { EmbeddingStorage } from '../../infrastructure/embedding-storage';
+import type { SpellConfig } from '../../core/types';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { mkdir, rm } from 'fs/promises';
 
 describe('HybridResolver', () => {
   let resolver: HybridResolver;

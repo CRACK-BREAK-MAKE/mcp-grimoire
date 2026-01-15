@@ -3,11 +3,11 @@
  * Following TDD: Write tests first, then implement
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
-import {access, mkdir} from 'fs/promises';
-import {join} from 'path';
-import {tmpdir} from 'os';
-import {ensureDirectories, getEmbeddingCachePath, getSpellDirectory, PATHS,} from '../paths';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { access, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { ensureDirectories, getEmbeddingCachePath, getSpellDirectory, PATHS } from '../paths';
 
 describe('Path Utilities', () => {
   describe('PATHS constant', () => {
@@ -137,7 +137,13 @@ describe('Path Utilities', () => {
 
   describe('Path Security', () => {
     it('should not contain shell metacharacters', () => {
-      const allPaths = [PATHS.config, PATHS.cache, PATHS.log, getSpellDirectory(), getEmbeddingCachePath()];
+      const allPaths = [
+        PATHS.config,
+        PATHS.cache,
+        PATHS.log,
+        getSpellDirectory(),
+        getEmbeddingCachePath(),
+      ];
 
       for (const path of allPaths) {
         expect(path).not.toMatch(/[;&|`$()]/);

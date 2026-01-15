@@ -24,9 +24,7 @@ describe('listCommand', () => {
     mkdirSync(testDir, { recursive: true });
 
     // Mock getSpellDirectory to return test directory
-    getSpellDirectorySpy = vi
-      .spyOn(pathsModule, 'getSpellDirectory')
-      .mockReturnValue(testDir);
+    getSpellDirectorySpy = vi.spyOn(pathsModule, 'getSpellDirectory').mockReturnValue(testDir);
   });
 
   afterEach(() => {
@@ -49,9 +47,7 @@ describe('listCommand', () => {
       // Assert
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No spells found'));
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('To add a spell:'));
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('grimoire example stdio')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('grimoire example stdio'));
     });
 
     it('should show grimoire directory path', async () => {
@@ -83,9 +79,7 @@ describe('listCommand', () => {
         await listCommand({});
       }).rejects.toThrow('Process.exit called with code 1');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Directory not found')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Directory not found'));
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Run the gateway once to create it')
       );
@@ -250,9 +244,7 @@ server:
       await listCommand({ verbose: true });
 
       // Assert
-      expect(consoleSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('Use --verbose')
-      );
+      expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('Use --verbose'));
     });
   });
 

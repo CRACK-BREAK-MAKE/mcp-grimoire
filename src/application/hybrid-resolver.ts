@@ -234,9 +234,7 @@ export class HybridResolver {
    * Index keywords for fast matching
    */
   private indexKeywords(config: SpellConfig): void {
-    const normalizedKeywords = new Set(
-      config.keywords.map((k) => this.normalizeText(k))
-    );
+    const normalizedKeywords = new Set(config.keywords.map((k) => this.normalizeText(k)));
 
     this.indexedSpells.set(config.name, {
       config,
@@ -303,10 +301,7 @@ export class HybridResolver {
   private computeKeywordScores(
     queryWords: string[]
   ): Map<string, { score: number; matchCount: number; exactCount: number }> {
-    const scores = new Map<
-      string,
-      { score: number; matchCount: number; exactCount: number }
-    >();
+    const scores = new Map<string, { score: number; matchCount: number; exactCount: number }>();
 
     // Filter stop words and short words from query
     const meaningfulWords = queryWords.filter(
@@ -360,10 +355,7 @@ export class HybridResolver {
         const weakMatchPenalty = matchCount === 1 && meaningfulWords.length > 3 ? 0.1 : 0;
 
         const confidence =
-          KEYWORD_MATCH_BASE_CONFIDENCE +
-          matchRatio * 0.1 +
-          exactBoost -
-          weakMatchPenalty;
+          KEYWORD_MATCH_BASE_CONFIDENCE + matchRatio * 0.1 + exactBoost - weakMatchPenalty;
 
         scores.set(spellName, {
           score: Math.min(confidence, 1.0),

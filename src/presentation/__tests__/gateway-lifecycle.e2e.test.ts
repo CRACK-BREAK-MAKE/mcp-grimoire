@@ -188,7 +188,7 @@ describe('Gateway Lifecycle E2E Integration', () => {
       expect(lifecycle.isActive('test-stdio')).toBe(false);
 
       // CRITICAL: Verify process is actually DEAD (kill -0 should throw ESRCH)
-      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for process to die
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for process to die
 
       try {
         process.kill(pid, 0);
@@ -233,7 +233,7 @@ describe('Gateway Lifecycle E2E Integration', () => {
       expect(lifecycle.isActive('test-stdio-2')).toBe(false);
 
       // CRITICAL: Verify both processes are DEAD
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       try {
         process.kill(pid1, 0);
@@ -296,7 +296,7 @@ describe('Gateway Lifecycle E2E Integration', () => {
       expect(lifecycle.isActive('test-stdio-active')).toBe(true);
 
       // Verify: Inactive dead, active alive
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       try {
         process.kill(pidInactive, 0);
@@ -318,7 +318,6 @@ describe('Gateway Lifecycle E2E Integration', () => {
       // Turn 8: Spawn cap-js (postgres idle 5 turns)
       // Turn 9: postgres KILLED (6 turns idle), stripe + cap-js active
       // Turn 14: stripe KILLED (7 turns idle), only cap-js active
-
 
       // Simulate three different spells (postgres, stripe, cap-js)
       // Turn 1-3: Use postgres
@@ -370,7 +369,7 @@ describe('Gateway Lifecycle E2E Integration', () => {
       console.log(`Turn 9: postgres KILLED (6 turns idle)`);
 
       // Verify postgres is DEAD
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       try {
         process.kill(postgresPid, 0);
         expect.fail(`postgres process ${postgresPid} should be dead`);
@@ -397,7 +396,7 @@ describe('Gateway Lifecycle E2E Integration', () => {
       console.log(`Turn 14: stripe KILLED (7 turns idle), only cap-js remains`);
 
       // Verify stripe is DEAD
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       try {
         process.kill(stripePid, 0);
         expect.fail(`stripe process ${stripePid} should be dead`);
@@ -486,7 +485,7 @@ describe('Gateway Lifecycle E2E Integration', () => {
       await newLifecycle.loadFromStorage();
 
       // Assert: Process should be KILLED
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       try {
         process.kill(orphanedPid, 0);
@@ -513,5 +512,4 @@ describe('Gateway Lifecycle E2E Integration', () => {
       console.log(`✅ Missing persistence file handled gracefully`);
     });
   });
-
 });

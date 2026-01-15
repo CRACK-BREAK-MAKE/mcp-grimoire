@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-01-14
 
 ### Added
+
 - Initial release of MCP Grimoire
 - **Lazy Loading**: Spawn MCP servers only when needed (94% token reduction)
 - **Intent Resolution**: Multi-tier confidence-based resolution (keyword + semantic)
@@ -43,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cross-Platform**: Works on macOS, Linux, and Windows
 
 ### Documentation
+
 - Complete Architecture Decision Records (ADRs)
 - Development guidelines and coding principles
 - Example spell configurations

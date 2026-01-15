@@ -31,6 +31,7 @@ Proposed
 **User Experience Considerations:**
 
 Users are already familiar with `${VAR}` syntax from:
+
 - Shell scripts: `echo ${HOME}`
 - Docker: `environment: - API_KEY=${API_KEY}`
 - GitHub Actions: `${{ secrets.API_KEY }}`
@@ -57,7 +58,7 @@ server:
   url: https://api.github.com/mcp
   auth:
     type: bearer
-    token: ${GITHUB_TOKEN}  # Expands to process.env.GITHUB_TOKEN at runtime
+    token: ${GITHUB_TOKEN} # Expands to process.env.GITHUB_TOKEN at runtime
 ```
 
 ### Consistency with stdio Transport
@@ -110,11 +111,13 @@ server:
 ### Alternative 1: Hardcode Secrets in YAML
 
 **Pros:**
+
 - No environment setup required
 - Works immediately
 - Simple user experience
 
 **Cons:**
+
 - **MAJOR SECURITY RISK** - Secrets committed to git
 - **Accidental exposure** - Git history retains secrets even after removal
 - **Sharing configs impossible** - Can't share spell configs without exposing credentials
@@ -125,11 +128,13 @@ server:
 ### Alternative 2: Separate `.env` File with dotenv Library
 
 **Pros:**
+
 - Popular pattern in Node.js
 - Clear separation of secrets
 - Can `.gitignore` the `.env` file
 
 **Cons:**
+
 - Adds dependency (`dotenv` package)
 - Not consistent with stdio approach (no `.env` file used there)
 - Another file to manage
@@ -140,6 +145,7 @@ server:
 ### Alternative 3: External Secret Management (AWS Secrets Manager, HashiCorp Vault)
 
 **Pros:**
+
 - Enterprise-grade security
 - Centralized secret management
 - Audit logging
@@ -147,6 +153,7 @@ server:
 - Fine-grained access control
 
 **Cons:**
+
 - **YAGNI violation** - Over-engineering for local tool
 - Requires cloud account or Vault server
 - Complex setup and maintenance
@@ -159,11 +166,13 @@ server:
 ### Alternative 4: Encrypted Credentials with Master Key
 
 **Pros:**
+
 - Secrets encrypted at rest
 - Can commit encrypted values to git
 - No external dependencies
 
 **Cons:**
+
 - Key management complexity (where to store master key?)
 - Must enter master password on startup
 - If master key lost, all secrets lost
@@ -198,7 +207,7 @@ function expandEnvVar(value: string): string {
 
 README should include:
 
-```markdown
+````markdown
 ### Using Environment Variables for Secrets
 
 Never hardcode API keys in spell configurations. Use environment variable expansion:
@@ -211,6 +220,7 @@ server:
     type: bearer
     token: ${MY_API_KEY}
 ```
+````
 
 Set the environment variable before running grimoire:
 
@@ -225,6 +235,7 @@ For permanent setup, add to your shell profile (~/.bashrc, ~/.zshrc):
 export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 export STRIPE_API_KEY=sk_live_xxxxxxxxxxxx
 ```
+
 ```
 
 ## References
@@ -235,3 +246,4 @@ export STRIPE_API_KEY=sk_live_xxxxxxxxxxxx
 - [GitHub - Removing Sensitive Data from Repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)
 - [stdio-auth-test-server.ts](../../tests/fixtures/test-servers/stdio-auth-test-server.ts) - Example of env var authentication
 - [create-with-env.integration.test.ts](../../src/cli/__tests__/create-with-env.integration.test.ts) - Evidence it works
+```

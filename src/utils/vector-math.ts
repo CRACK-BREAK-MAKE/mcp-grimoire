@@ -24,9 +24,7 @@ export function dotProduct(v1: number[], v2: number[]): number {
   }
 
   if (v1.length !== v2.length) {
-    throw new Error(
-      `Vectors must have the same length (got ${v1.length} and ${v2.length})`
-    );
+    throw new Error(`Vectors must have the same length (got ${v1.length} and ${v2.length})`);
   }
 
   let sum = 0;

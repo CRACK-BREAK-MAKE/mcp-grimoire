@@ -23,6 +23,7 @@ Currently, stdio transport has 100% authentication support via environment varia
 **MCP Specification Requirements:**
 
 The MCP specification requires OAuth 2.1 support with:
+
 - PKCE (Proof Key for Code Exchange) for authorization code flow
 - Bearer token transmission via `Authorization` header
 - No token passthrough (anti-pattern)
@@ -37,18 +38,21 @@ Users CANNOT use ANY authenticated remote MCP servers with HTTP/SSE transports. 
 Implement **three-tier authentication strategy in a single release**:
 
 ### Phase 1: Bearer Tokens + Custom Headers
+
 - Add `AuthConfig` type with bearer token support
 - Implement `buildAuthHeaders()` to add `Authorization: Bearer` header
 - Support `${VAR}` environment variable expansion
 - Pass `requestInit` with headers to MCP SDK transports
 
 ### Phase 2: OAuth Client Credentials Flow
+
 - Implement `ClientCredentialsProvider` class
 - Token caching with expiry checking
 - 401 error handling with automatic token refresh
 - `authProvider` integration with MCP SDK
 
 ### Phase 3: OAuth Authorization Code + PKCE Flow
+
 - Implement PKCE utilities (`code_verifier`, `code_challenge`)
 - `AuthorizationCodeProvider` class
 - Browser launch for user consent
@@ -59,6 +63,7 @@ Implement **three-tier authentication strategy in a single release**:
 **Development Methodology:**
 
 All phases will be implemented together using **strict TDD (Test-Driven Development)**:
+
 1. Write tests first (RED)
 2. Implement to pass tests (GREEN)
 3. Refactor (REFACTOR)
@@ -97,11 +102,13 @@ Each phase builds incrementally on the previous, allowing thorough testing at ea
 ### Alternative 1: Implement Only Bearer Tokens
 
 **Pros:**
+
 - Simplest implementation (1 day)
 - Covers 80% of use cases
 - Low risk
 
 **Cons:**
+
 - Doesn't meet MCP spec requirements for OAuth 2.1
 - Blocks users needing OAuth
 - Must revisit later for compliance
@@ -111,11 +118,13 @@ Each phase builds incrementally on the previous, allowing thorough testing at ea
 ### Alternative 2: Phased Releases (Separate Phase 1, 2, 3)
 
 **Pros:**
+
 - Can get early user feedback on Phase 1
 - Smaller PRs to review
 - Lower risk per release
 
 **Cons:**
+
 - User explicitly requested all phases at once
 - Cannot test full integration until Phase 3
 - May introduce breaking changes between phases
@@ -125,11 +134,13 @@ Each phase builds incrementally on the previous, allowing thorough testing at ea
 ### Alternative 3: OAuth 2.1 Only (No Bearer Token Support)
 
 **Pros:**
+
 - Single authentication mechanism
 - Simpler conceptual model
 - Full spec compliance
 
 **Cons:**
+
 - YAGNI violation - over-engineering for 80% of users
 - Forces unnecessary complexity on simple API keys
 - Worse developer experience

@@ -14,9 +14,9 @@
  * 3. Refactor if needed (REFACTOR)
  */
 
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {GrimoireServer} from '../gateway';
-import type {SpellConfig} from '../../core/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GrimoireServer } from '../gateway';
+import type { SpellConfig } from '../../core/types';
 
 describe('Security Validation', () => {
   let gateway: GrimoireServer;
@@ -134,15 +134,11 @@ describe('Security Validation', () => {
 
   describe('Power Name Validation', () => {
     it('should reject null power name', async () => {
-      await expect(
-        gateway.handleActivateSpellCall({ name: null as any })
-      ).rejects.toThrow();
+      await expect(gateway.handleActivateSpellCall({ name: null as any })).rejects.toThrow();
     });
 
     it('should reject undefined power name', async () => {
-      await expect(
-        gateway.handleActivateSpellCall({ name: undefined as any })
-      ).rejects.toThrow();
+      await expect(gateway.handleActivateSpellCall({ name: undefined as any })).rejects.toThrow();
     });
 
     it('should reject empty power name', async () => {

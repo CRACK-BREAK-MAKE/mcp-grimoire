@@ -34,7 +34,16 @@ describe('Gateway Real Workflow Integration Test', () => {
     name: 'skystream-airlines',
     version: '1.0.0',
     description: 'Airline booking and customer management',
-    keywords: ['flight', 'airline', 'travel', 'booking', 'airport', 'aviation', 'tickets', 'passenger'],
+    keywords: [
+      'flight',
+      'airline',
+      'travel',
+      'booking',
+      'airport',
+      'aviation',
+      'tickets',
+      'passenger',
+    ],
     server: {
       transport: 'sse',
       url: 'http://127.0.0.1:9000/sse',
@@ -65,52 +74,58 @@ describe('Gateway Real Workflow Integration Test', () => {
 
     // Mock lifecycle to simulate SSE server spawning
     // @ts-expect-error - Accessing private property for testing
-    vi.spyOn(gateway.lifecycle, 'spawn').mockImplementation(async (name: string, _config: SpellConfig) => {
-      // Return mock tools based on spell name
-      if (name === 'cityhopper-cabs') {
-        return [
-          {
-            name: 'find_nearby_cabs',
-            description: 'Finds drivers currently available near a specific location',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-          },
-          {
-            name: 'estimate_fare',
-            description: 'Calculates estimated fare',
-            inputSchema: { type: 'object', properties: { miles: { type: 'number' } }, required: ['miles'] },
-          },
-          {
-            name: 'book_cab',
-            description: 'Books the nearest available cab',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-          },
-          {
-            name: 'cancel_booking',
-            description: 'Cancels a ride',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-          },
-        ];
-      } else if (name === 'skystream-airlines') {
-        return [
-          {
-            name: 'search_flights',
-            description: 'Search available flights',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-          },
-          {
-            name: 'book_flight',
-            description: 'Book a flight',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-          },
-          {
-            name: 'customer_login',
-            description: 'Customer login and authentication',
-            inputSchema: { type: 'object', properties: {}, required: [] },
-          },
-        ];
+    vi.spyOn(gateway.lifecycle, 'spawn').mockImplementation(
+      async (name: string, _config: SpellConfig) => {
+        // Return mock tools based on spell name
+        if (name === 'cityhopper-cabs') {
+          return [
+            {
+              name: 'find_nearby_cabs',
+              description: 'Finds drivers currently available near a specific location',
+              inputSchema: { type: 'object', properties: {}, required: [] },
+            },
+            {
+              name: 'estimate_fare',
+              description: 'Calculates estimated fare',
+              inputSchema: {
+                type: 'object',
+                properties: { miles: { type: 'number' } },
+                required: ['miles'],
+              },
+            },
+            {
+              name: 'book_cab',
+              description: 'Books the nearest available cab',
+              inputSchema: { type: 'object', properties: {}, required: [] },
+            },
+            {
+              name: 'cancel_booking',
+              description: 'Cancels a ride',
+              inputSchema: { type: 'object', properties: {}, required: [] },
+            },
+          ];
+        } else if (name === 'skystream-airlines') {
+          return [
+            {
+              name: 'search_flights',
+              description: 'Search available flights',
+              inputSchema: { type: 'object', properties: {}, required: [] },
+            },
+            {
+              name: 'book_flight',
+              description: 'Book a flight',
+              inputSchema: { type: 'object', properties: {}, required: [] },
+            },
+            {
+              name: 'customer_login',
+              description: 'Customer login and authentication',
+              inputSchema: { type: 'object', properties: {}, required: [] },
+            },
+          ];
+        }
+        return [];
       }
-      return [];
-    });
+    );
 
     // @ts-expect-error - Accessing private property for testing
     vi.spyOn(gateway.lifecycle, 'isActive').mockReturnValue(false);
@@ -161,7 +176,10 @@ describe('Gateway Real Workflow Integration Test', () => {
     // Step 1: Initial state - Gateway tools only
     console.log('Step 1: Check initial tool list');
     const initialTools = gateway.getAvailableTools();
-    console.log(`Initial tools (${initialTools.length}):`, initialTools.map((t) => t.name));
+    console.log(
+      `Initial tools (${initialTools.length}):`,
+      initialTools.map((t) => t.name)
+    );
 
     expect(initialTools.length).toBe(2);
     expect(initialTools.map((t) => t.name)).toContain('resolve_intent');
@@ -183,7 +201,10 @@ describe('Gateway Real Workflow Integration Test', () => {
     // Step 3: Verify tools list after first activation
     console.log('\nStep 3: Check tool list after cityhopper-cabs activation');
     const toolsAfterFirst = gateway.getAvailableTools();
-    console.log(`Tools after first activation (${toolsAfterFirst.length}):`, toolsAfterFirst.map((t) => t.name));
+    console.log(
+      `Tools after first activation (${toolsAfterFirst.length}):`,
+      toolsAfterFirst.map((t) => t.name)
+    );
 
     // CRITICAL: Should have 2 gateway + 4 cityhopper-cabs = 6 tools
     expect(toolsAfterFirst.length).toBe(6);
@@ -214,7 +235,10 @@ describe('Gateway Real Workflow Integration Test', () => {
     // Step 5: Verify tools list after second activation
     console.log('\nStep 5: Check tool list after potential second activation');
     const toolsAfterSecond = gateway.getAvailableTools();
-    console.log(`Tools after second activation (${toolsAfterSecond.length}):`, toolsAfterSecond.map((t) => t.name));
+    console.log(
+      `Tools after second activation (${toolsAfterSecond.length}):`,
+      toolsAfterSecond.map((t) => t.name)
+    );
 
     // CRITICAL: Gateway tools must STILL be present
     const toolNamesAfterSecond = toolsAfterSecond.map((t) => t.name);
@@ -278,6 +302,9 @@ describe('Gateway Real Workflow Integration Test', () => {
     expect(tools.map((t) => t.name)).toContain('activate_spell');
 
     // Both should still work
-    console.log('Final tool list:', tools.map((t) => t.name));
+    console.log(
+      'Final tool list:',
+      tools.map((t) => t.name)
+    );
   });
 });

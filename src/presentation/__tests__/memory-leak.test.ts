@@ -13,10 +13,10 @@
  * CRITICAL: Tests memory management in production-realistic scenarios
  */
 
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {GrimoireServer} from '../gateway';
-import {ToolRouter} from '../tool-router';
-import type {SpellConfig, Tool} from '../../core/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GrimoireServer } from '../gateway';
+import { ToolRouter } from '../tool-router';
+import type { SpellConfig, Tool } from '../../core/types';
 
 describe('Memory Leak Detection', () => {
   let gateway: GrimoireServer;
@@ -124,7 +124,7 @@ describe('Memory Leak Detection', () => {
         await gateway.lifecycle.kill('test-power');
 
         // Allow event loop to process cleanup
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       // Force garbage collection if available
@@ -160,7 +160,7 @@ describe('Memory Leak Detection', () => {
         // @ts-expect-error - Accessing private property for testing
         await gateway.lifecycle.kill('test-power');
 
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       if (global.gc) {
@@ -178,7 +178,7 @@ describe('Memory Leak Detection', () => {
       if (global.gc) {
         global.gc();
         global.gc();
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
       const baselineMemory = process.memoryUsage().heapUsed;
 
@@ -204,14 +204,14 @@ describe('Memory Leak Detection', () => {
         await gateway.lifecycle.kill('test-power');
 
         // Allow event loop to process cleanup
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       // Force GC to clean up unreferenced objects
       if (global.gc) {
         global.gc();
         global.gc();
-        await new Promise(resolve => setImmediate(resolve));
+        await new Promise((resolve) => setImmediate(resolve));
       }
 
       const finalMemory = process.memoryUsage().heapUsed;
@@ -293,7 +293,7 @@ describe('Memory Leak Detection', () => {
         await gateway.lifecycle.kill('test-power');
 
         // Simulate idle time between usage cycles
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       if (global.gc) {

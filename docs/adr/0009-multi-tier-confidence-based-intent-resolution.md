@@ -76,6 +76,7 @@ Implement a **3-tier confidence-based routing strategy** that leverages the AI a
 **Rationale**: Hybrid resolver is highly confident (exact keyword + semantic alignment)
 
 **Response Format**:
+
 ```json
 {
   "status": "activated",
@@ -100,11 +101,13 @@ Implement a **3-tier confidence-based routing strategy** that leverages the AI a
 **Action**: Return top 2-3 candidates with descriptions, let AI agent choose
 
 **Rationale**:
+
 - Multiple plausible matches
 - AI agent has conversation context to decide
 - Token efficient (~300-500 tokens vs 40,000 for all tools)
 
 **Response Format**:
+
 ```json
 {
   "status": "multiple_matches",
@@ -137,10 +140,12 @@ Implement a **3-tier confidence-based routing strategy** that leverages the AI a
 ```
 
 **User Experience**:
+
 - AI agent either chooses based on context (0 extra turns)
 - Or asks user for clarification (1 extra turn)
 
 **Example**:
+
 ```
 Claude: "You have PostgreSQL, MySQL, and MongoDB configured.
 Based on our earlier conversation about your e-commerce app,
@@ -156,11 +161,13 @@ I'll use PostgreSQL."
 **Action**: Return top 5 weak matches or error with available spells
 
 **Rationale**:
+
 - Confidence <0.5 means semantic similarity is weak
 - Still provide options in case AI agent can infer from context
 - Clear error for truly unmatched queries
 
 **Response Format (Weak Matches 0.3-0.49)**:
+
 ```json
 {
   "status": "weak_matches",
@@ -175,6 +182,7 @@ I'll use PostgreSQL."
 ```
 
 **Response Format (No Match <0.3)**:
+
 ```json
 {
   "status": "not_found",
@@ -218,12 +226,12 @@ To support Tier 2 (multiple matches), add a new MCP tool:
 
 ### Threshold Rationale
 
-| Threshold | Rationale |
-|-----------|-----------|
-| **≥0.85** | Keyword match (0.9+) or strong hybrid. High precision. |
+| Threshold    | Rationale                                                               |
+| ------------ | ----------------------------------------------------------------------- |
+| **≥0.85**    | Keyword match (0.9+) or strong hybrid. High precision.                  |
 | **0.5-0.84** | Semantic similarity indicates relevance. Multiple plausible candidates. |
-| **0.3-0.49** | Weak semantic similarity. Matches may be wrong but worth showing. |
-| **<0.3** | Noise. Cosine similarity <0.3 is essentially random. |
+| **0.3-0.49** | Weak semantic similarity. Matches may be wrong but worth showing.       |
+| **<0.3**     | Noise. Cosine similarity <0.3 is essentially random.                    |
 
 Based on semantic similarity research and production systems (Pinecone, Weaviate), these thresholds balance precision and recall.
 
@@ -323,16 +331,16 @@ Based on semantic similarity research and production systems (Pinecone, Weaviate
 
 ```typescript
 // Gateway calls Claude Haiku to decide
-const result = await llm.complete(
-  `Select tool for: "${query}"\nOptions: ${tools}`
-);
+const result = await llm.complete(`Select tool for: "${query}"\nOptions: ${tools}`);
 ```
 
 **Pros**:
+
 - More accurate routing
 - Can handle very ambiguous queries
 
 **Cons**:
+
 - ❌ **Gateway has no LLM access** (architectural violation)
 - ❌ **No conversation context** (worse than agent deciding)
 - ❌ Adds latency (500-2000ms)
@@ -349,10 +357,12 @@ const result = await llm.complete(
 **Approach**: Never auto-spawn, always return 3-5 options
 
 **Pros**:
+
 - Simple (no thresholds)
 - User/agent always in control
 
 **Cons**:
+
 - ❌ Token waste: ~1,500 tokens even for obvious queries
 - ❌ User friction: Extra turn for every query
 - ❌ Slower: No instant activation path
@@ -373,10 +383,12 @@ confidence:
 ```
 
 **Pros**:
+
 - Flexible
 - Power users can tune
 
 **Cons**:
+
 - ⚠️ Requires understanding semantic similarity
 - ⚠️ Most users won't tune
 - ⚠️ Bad defaults = bad experience
@@ -400,10 +412,12 @@ if (status === 'multiple_matches' && userSelected) {
 ```
 
 **Pros**:
+
 - Improves accuracy over time
 - Personalized to user's workflow
 
 **Cons**:
+
 - ⚠️ Complex: feedback loop, storage, retraining
 - ⚠️ Privacy: logging user queries
 - ⚠️ Requires many samples to be useful
@@ -418,10 +432,12 @@ if (status === 'multiple_matches' && userSelected) {
 **Approach**: ML model predicts likely next tool, pre-loads it
 
 **Pros**:
+
 - Could reduce activation latency to zero
 - Smarter than lazy loading
 
 **Cons**:
+
 - ❌ Very complex (ML model, training data)
 - ❌ Still wastes resources on wrong predictions
 - ❌ Over-engineering (YAGNI violation)
@@ -434,12 +450,14 @@ if (status === 'multiple_matches' && userSelected) {
 ### Week 1: Core Infrastructure (5 days)
 
 **Day 1-2**: Update response format
+
 - Add `status` field: `activated | multiple_matches | weak_matches | not_found`
 - Add `matches` array for Tier 2/3
 - Add `message` field for user guidance
 - Update TypeScript types
 
 **Day 3**: Implement confidence-based routing
+
 ```typescript
 class PowerGatewayServer {
   async handleResolveIntent(query: string) {
@@ -460,12 +478,14 @@ class PowerGatewayServer {
 ```
 
 **Day 4**: Implement `activate_power` tool
+
 - Add tool definition to gateway
 - Add handler that spawns specified power
 - Inject steering and return tools
 - Send tools/list_changed notification
 
 **Day 5**: Unit and integration tests
+
 - Test all 4 tiers (high, medium, weak, none)
 - Test activate_power workflow
 - Test error cases (invalid spell name, etc.)
@@ -473,24 +493,28 @@ class PowerGatewayServer {
 ### Week 2: Validation & Documentation (5 days)
 
 **Day 1-2**: Create validation dataset
+
 - 20 high-confidence queries (expect auto-spawn)
 - 20 medium-confidence queries (expect alternatives)
 - 20 low-confidence queries (expect weak matches)
 - 10 no-match queries (expect error)
 
 **Day 3**: Measure accuracy
+
 - Run validation dataset
 - Measure: correct tier classification, correct power in results
 - Target: >90% tier classification, >95% correct power in top-3
 - Tune thresholds if needed
 
 **Day 4**: Integration testing
+
 - Test with real Claude Desktop
 - Verify activate_power UX
 - Measure real-world latency
 - Test edge cases
 
 **Day 5**: Documentation
+
 - Update [architecture.md](../architecture.md)
 - Update [plan.md](../plans/plan.md)
 - Add examples to README
@@ -500,14 +524,14 @@ class PowerGatewayServer {
 
 ### Success Criteria
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Token reduction | >95% | Compare to 40,000 baseline |
-| Average latency | <100ms | Weighted by frequency |
-| Tier classification accuracy | >90% | Validation dataset |
-| Top-3 accuracy | >95% | Correct power in top-3 |
-| User friction (high confidence) | 0 turns | Should auto-spawn |
-| User friction (medium confidence) | 0-1 turns | Agent decides or asks |
+| Metric                            | Target    | Measurement                |
+| --------------------------------- | --------- | -------------------------- |
+| Token reduction                   | >95%      | Compare to 40,000 baseline |
+| Average latency                   | <100ms    | Weighted by frequency      |
+| Tier classification accuracy      | >90%      | Validation dataset         |
+| Top-3 accuracy                    | >95%      | Correct power in top-3     |
+| User friction (high confidence)   | 0 turns   | Should auto-spawn          |
+| User friction (medium confidence) | 0-1 turns | Agent decides or asks      |
 
 ### Performance Targets
 

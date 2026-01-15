@@ -4,7 +4,6 @@ import { parse as parseYAML } from 'yaml';
 import { ConfigurationError, isSpellConfig, validateSpellConfig } from '../core/spell-config';
 import type { SpellConfig } from '../core/types';
 
-
 /**
  * Interface for loading spell configurations
  */

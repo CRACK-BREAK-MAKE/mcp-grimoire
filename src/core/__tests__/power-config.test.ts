@@ -1,6 +1,6 @@
-import {ConfigurationError, validateSpellConfig} from '../spell-config';
-import type {SpellConfig} from '../types';
-import {describe, expect, it} from 'vitest';
+import { ConfigurationError, validateSpellConfig } from '../spell-config';
+import type { SpellConfig } from '../types';
+import { describe, expect, it } from 'vitest';
 
 describe('SpellConfig Validation', () => {
   describe('validateSpellConfig', () => {

@@ -17,7 +17,12 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { execSync, spawn, type ChildProcess } from 'child_process';
 import { parse } from 'yaml';
-import type { SpellConfig, StdioServerConfig, SSEServerConfig, HTTPServerConfig } from '../../core/types';
+import type {
+  SpellConfig,
+  StdioServerConfig,
+  SSEServerConfig,
+  HTTPServerConfig,
+} from '../../core/types';
 
 describe('CLI Authentication Comprehensive Integration Test', () => {
   const cliBin = join(process.cwd(), 'dist/cli.js');
@@ -196,7 +201,12 @@ describe('CLI Authentication Comprehensive Integration Test', () => {
       process.env.TEST_DB_PASSWORD = 'secret123';
 
       // Act: Create spell via CLI with env vars
-      const cmd = 'node "' + cliBin + '" create -n ' + spellName + ' -t stdio --command "tsx" --args "tests/fixtures/test-servers/stdio-auth-test-server.ts" --env TEST_API_KEY=test-secret-key-123 --env "DB_PASSWORD=\\${TEST_DB_PASSWORD}" --no-interactive --probe';
+      const cmd =
+        'node "' +
+        cliBin +
+        '" create -n ' +
+        spellName +
+        ' -t stdio --command "tsx" --args "tests/fixtures/test-servers/stdio-auth-test-server.ts" --env TEST_API_KEY=test-secret-key-123 --env "DB_PASSWORD=\\${TEST_DB_PASSWORD}" --no-interactive --probe';
 
       const output = execSync(cmd, { encoding: 'utf-8' });
 
@@ -238,7 +248,14 @@ describe('CLI Authentication Comprehensive Integration Test', () => {
       process.env.SSE_AUTH_TOKEN = BEARER_TOKEN;
 
       // Act: Create via CLI (non-interactive, passing auth via env)
-      const cmd = 'node "' + cliBin + '" create -n ' + spellName + ' -t sse --url "http://localhost:' + sseBearerPort + '/sse" --auth-type bearer --auth-token "\\${SSE_AUTH_TOKEN}" --no-interactive --probe';
+      const cmd =
+        'node "' +
+        cliBin +
+        '" create -n ' +
+        spellName +
+        ' -t sse --url "http://localhost:' +
+        sseBearerPort +
+        '/sse" --auth-type bearer --auth-token "\\${SSE_AUTH_TOKEN}" --no-interactive --probe';
 
       const output = execSync(cmd, { encoding: 'utf-8' });
 
@@ -282,7 +299,14 @@ describe('CLI Authentication Comprehensive Integration Test', () => {
       process.env.HTTP_AUTH_TOKEN = BEARER_TOKEN;
 
       // Act: Create via CLI
-      const cmd = 'node "' + cliBin + '" create -n ' + spellName + ' -t http --url "http://localhost:' + httpBearerPort + '/mcp" --auth-type bearer --auth-token "\\${HTTP_AUTH_TOKEN}" --no-interactive --probe';
+      const cmd =
+        'node "' +
+        cliBin +
+        '" create -n ' +
+        spellName +
+        ' -t http --url "http://localhost:' +
+        httpBearerPort +
+        '/mcp" --auth-type bearer --auth-token "\\${HTTP_AUTH_TOKEN}" --no-interactive --probe';
 
       const output = execSync(cmd, { encoding: 'utf-8' });
 
@@ -328,7 +352,16 @@ describe('CLI Authentication Comprehensive Integration Test', () => {
       process.env.OAUTH_CLIENT_SECRET = OAUTH_CLIENT_SECRET;
 
       // Act: Create via CLI with OAuth
-      const cmd = 'node "' + cliBin + '" create -n ' + spellName + ' -t http --url "http://localhost:' + httpOAuthPort + '/mcp" --auth-type client_credentials --auth-client-id "\\${OAUTH_CLIENT_ID}" --auth-client-secret "\\${OAUTH_CLIENT_SECRET}" --auth-token-url "http://localhost:' + oauthTokenPort + '/token" --auth-scope "api.read" --no-interactive --probe';
+      const cmd =
+        'node "' +
+        cliBin +
+        '" create -n ' +
+        spellName +
+        ' -t http --url "http://localhost:' +
+        httpOAuthPort +
+        '/mcp" --auth-type client_credentials --auth-client-id "\\${OAUTH_CLIENT_ID}" --auth-client-secret "\\${OAUTH_CLIENT_SECRET}" --auth-token-url "http://localhost:' +
+        oauthTokenPort +
+        '/token" --auth-scope "api.read" --no-interactive --probe';
 
       const output = execSync(cmd, { encoding: 'utf-8' });
 

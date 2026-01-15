@@ -11,6 +11,7 @@ Proposed
 Full OAuth 2.1 implementation is complex and includes:
 
 **OAuth 2.1 Components:**
+
 - Authorization endpoints (for user consent)
 - Token endpoints (for obtaining tokens)
 - PKCE (Proof Key for Code Exchange) - code verifier and challenge
@@ -23,6 +24,7 @@ Full OAuth 2.1 implementation is complex and includes:
 **Implementation Risk:**
 
 Implementing everything at once is high risk:
+
 - Complex to test all interactions
 - Difficult to debug failures
 - Hard to verify correctness
@@ -33,12 +35,14 @@ Implementing everything at once is high risk:
 User explicitly requested: "Let's create ADRs and implement all the phases at once so we can create proper integrations tests and release."
 
 This creates a tension:
+
 - Need incremental approach for development and testing
 - Must deliver complete solution in single release (not separate releases)
 
 **MCP Specification Requirements:**
 
 The MCP spec requires:
+
 1. OAuth 2.1 support (not 2.0)
 2. PKCE for authorization code flow
 3. Bearer token transmission via header (not query string)
@@ -58,17 +62,20 @@ Implement OAuth support in **three incremental phases within a single release cy
 **Goal:** Enable simple API key authentication
 
 **Components:**
+
 - Implement `buildAuthHeaders()` function
 - Environment variable expansion (`${VAR}`)
 - `requestInit` with Authorization header
 - No OAuth, no token management
 
 **Test Strategy:**
+
 - RED: Write tests for header building, env var expansion
 - GREEN: Implement to pass tests
 - REFACTOR: Extract constants, simplify functions
 
 **Evidence it works:**
+
 - Unit tests pass
 - Integration tests with authenticated test server pass
 - Can connect to real APIs (GitHub, Stripe)
@@ -78,17 +85,20 @@ Implement OAuth support in **three incremental phases within a single release cy
 **Goal:** Enable OAuth for automated systems (no user interaction)
 
 **Components:**
+
 - Implement `ClientCredentialsProvider` class
 - Token caching with expiry checking
 - 401 error handling with automatic token refresh
 - `authProvider` integration with MCP SDK
 
 **Test Strategy:**
+
 - RED: Write tests for token caching, refresh, 401 handling
 - GREEN: Implement ClientCredentialsProvider
 - REFACTOR: Extract token management logic
 
 **Evidence it works:**
+
 - Tokens cached correctly (only one request for multiple calls)
 - Expired tokens refreshed automatically
 - 401 errors trigger token refresh and retry
@@ -98,6 +108,7 @@ Implement OAuth support in **three incremental phases within a single release cy
 **Goal:** Enable full OAuth 2.1 with user consent
 
 **Components:**
+
 - Implement PKCE utilities (`generateCodeVerifier()`, `generateCodeChallenge()`)
 - `AuthorizationCodeProvider` class
 - Browser launch for user consent
@@ -106,11 +117,13 @@ Implement OAuth support in **three incremental phases within a single release cy
 - Endpoint discovery (RFC 8414 `.well-known` endpoints)
 
 **Test Strategy:**
+
 - RED: Write tests for PKCE flow, browser launch, callback handling
 - GREEN: Implement AuthorizationCodeProvider
 - REFACTOR: Extract OAuth flow logic
 
 **Evidence it works:**
+
 - PKCE challenge/verifier validation works
 - Browser opens with correct authorization URL
 - Callback server receives authorization code
@@ -173,10 +186,12 @@ For each phase:
 ### Alternative 1: Single-Phase Implementation (All OAuth at Once)
 
 **Pros:**
+
 - Only one implementation phase
 - Only one round of testing
 
 **Cons:**
+
 - Too complex to test all interactions
 - High risk of bugs
 - Hard to debug failures
@@ -188,12 +203,14 @@ For each phase:
 ### Alternative 2: Phased Releases (Release Phase 1, Get Feedback, Then Phase 2, etc.)
 
 **Pros:**
+
 - Can get early user feedback on Phase 1
 - Smaller PRs to review
 - Lower risk per release
 - Can iterate based on user needs
 
 **Cons:**
+
 - User explicitly requested all phases at once
 - Cannot test full integration until Phase 3
 - May introduce breaking changes between phases
@@ -204,11 +221,13 @@ For each phase:
 ### Alternative 3: Skip OAuth Entirely, Only Bearer Tokens
 
 **Pros:**
+
 - Simplest implementation (1 day)
 - Covers 80% of use cases
 - Low risk
 
 **Cons:**
+
 - Violates MCP specification requirements
 - Blocks future remote server integrations
 - Technical debt (must revisit later)
@@ -221,27 +240,32 @@ For each phase:
 **Total Effort:** 4.5 days (all phases)
 
 ### Step 0: ADRs (0.5 days) ✅
+
 - ADR-0011: Multi-Tier Authentication Strategy
 - ADR-0012: Bearer Token First Approach
 - ADR-0013: Environment Variable Expansion
 - ADR-0014: Three-Phase OAuth Strategy (this document)
 
 ### Steps 1-3: Phase 1 (1 day)
+
 - Write Phase 1 tests (RED)
 - Implement Phase 1 (GREEN)
 - Refactor Phase 1 (REFACTOR)
 
 ### Steps 4-6: Phase 2 (1 day)
+
 - Write Phase 2 tests (RED)
 - Implement Phase 2 (GREEN)
 - Refactor Phase 2 (REFACTOR)
 
 ### Steps 7-9: Phase 3 (1.5 days)
+
 - Write Phase 3 tests (RED)
 - Implement Phase 3 (GREEN)
 - Refactor Phase 3 (REFACTOR)
 
 ### Step 10: Documentation (0.5 days)
+
 - Update README.md
 - Update docs/remote-mcp-servers.md
 - Update docs/architecture.md
@@ -250,18 +274,21 @@ For each phase:
 ## Success Criteria
 
 **Phase 1 Complete:**
+
 - [ ] Can connect to GitHub API with Bearer token
 - [ ] Can connect to Stripe API with API key
 - [ ] Environment variable expansion works
 - [ ] All Phase 1 tests pass
 
 **Phase 2 Complete:**
+
 - [ ] Tokens cached correctly
 - [ ] Expired tokens refreshed automatically
 - [ ] 401 errors handled with retry
 - [ ] All Phase 2 tests pass
 
 **Phase 3 Complete:**
+
 - [ ] PKCE flow works correctly
 - [ ] Browser opens for consent
 - [ ] Callback server handles redirect
@@ -269,6 +296,7 @@ For each phase:
 - [ ] All Phase 3 tests pass
 
 **Release Ready:**
+
 - [ ] All phases complete
 - [ ] All tests passing
 - [ ] Documentation updated

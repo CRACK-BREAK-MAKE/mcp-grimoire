@@ -7,11 +7,11 @@
  * Returns 401 Unauthorized without valid token
  */
 
-import {Server} from '@modelcontextprotocol/sdk/server/index.js';
-import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import {SSEServerTransport} from '@modelcontextprotocol/sdk/server/sse.js';
-import {CallToolRequestSchema, ListToolsRequestSchema} from '@modelcontextprotocol/sdk/types.js';
-import {createServer, type IncomingMessage, type ServerResponse} from 'http';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 
 const PORT = parseInt(process.argv[2] || '3333', 10);
 const REQUIRED_TOKEN = process.env.TEST_AUTH_TOKEN || 'test-secret-key-123';

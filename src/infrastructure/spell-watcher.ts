@@ -87,7 +87,11 @@ export class SpellWatcher {
         this.handleFileDeleted(filePath);
       })
       .on('error', (error) => {
-        logger.error('WATCH', 'Spell watcher error', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'WATCH',
+          'Spell watcher error',
+          error instanceof Error ? error : new Error(String(error))
+        );
       });
 
     logger.info('WATCH', 'Spell file watcher started');
@@ -140,7 +144,11 @@ export class SpellWatcher {
           keywords: config.keywords.length,
         });
       } catch (error) {
-        logger.error('WATCH', 'Failed to load new spell file', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'WATCH',
+          'Failed to load new spell file',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
     });
   }
@@ -203,7 +211,11 @@ export class SpellWatcher {
           });
         }
       } catch (error) {
-        logger.error('WATCH', 'Failed to reload modified spell file', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'WATCH',
+          'Failed to reload modified spell file',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
     });
   }
@@ -247,7 +259,11 @@ export class SpellWatcher {
           wasActive,
         });
       } catch (error) {
-        logger.error('WATCH', 'Failed to remove deleted spell', error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          'WATCH',
+          'Failed to remove deleted spell',
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
     });
   }

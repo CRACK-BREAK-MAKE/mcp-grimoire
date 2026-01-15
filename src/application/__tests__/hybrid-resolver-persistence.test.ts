@@ -1,11 +1,11 @@
-import {afterEach, beforeAll, beforeEach, describe, expect, it} from 'vitest';
-import {HybridResolver} from '../hybrid-resolver';
-import {EmbeddingService} from '../../infrastructure/embedding-service';
-import {EmbeddingStorage} from '../../infrastructure/embedding-storage';
-import type {SpellConfig} from '../../core/types';
-import {existsSync, unlinkSync} from 'fs';
-import {join} from 'path';
-import {tmpdir} from 'os';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { HybridResolver } from '../hybrid-resolver';
+import { EmbeddingService } from '../../infrastructure/embedding-service';
+import { EmbeddingStorage } from '../../infrastructure/embedding-storage';
+import type { SpellConfig } from '../../core/types';
+import { existsSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 describe('HybridResolver - Embedding Persistence', () => {
   let resolver: HybridResolver;

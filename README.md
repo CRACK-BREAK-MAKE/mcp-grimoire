@@ -17,16 +17,19 @@
 Traditional MCP implementations suffer from three critical issues:
 
 **1. Context Overload (Token Waste) 💸**
+
 - Loading 50+ tools at startup consumes 40,000+ tokens
 - Degrades AI performance and increases API costs
 - Results in slower responses and confused tool selection
 
 **2. Missing Domain Expertise 🤷**
+
 - MCP tools lack contextual guidance and best practices
 - Users must manually prompt for security patterns
 - Leads to vulnerabilities and inconsistent usage
 
 **3. Plugin Development Complexity 🔧**
+
 - No standardized patterns for creating MCP plugins
 - Difficult to maintain and extend
 - Fragmented ecosystem
@@ -129,12 +132,12 @@ Executes with best practices → After 5 turns idle → Kill server
 
 Grimoire uses a **confidence-based approach** to decide when to auto-spawn vs ask for clarification:
 
-| Tier | Confidence | Behavior | Example |
-|------|-----------|----------|---------|
-| **High** | ≥ 0.85 | **Auto-spawn** immediately | "query postgres" → Instant activation |
-| **Medium** | 0.50-0.84 | **Return alternatives** | "check database" → [postgres, mysql, mongodb] |
-| **Low** | 0.30-0.49 | **Weak matches** | "analyze data" → 5 weak matches |
-| **None** | < 0.30 | **Not found** | "launch rocket" → Error + available spells |
+| Tier       | Confidence | Behavior                   | Example                                       |
+| ---------- | ---------- | -------------------------- | --------------------------------------------- |
+| **High**   | ≥ 0.85     | **Auto-spawn** immediately | "query postgres" → Instant activation         |
+| **Medium** | 0.50-0.84  | **Return alternatives**    | "check database" → [postgres, mysql, mongodb] |
+| **Low**    | 0.30-0.49  | **Weak matches**           | "analyze data" → 5 weak matches               |
+| **None**   | < 0.30     | **Not found**              | "launch rocket" → Error + available spells    |
 
 **70% of queries** hit high confidence (zero-friction UX)
 **20% of queries** hit medium confidence (AI agent picks from context)
@@ -153,6 +156,7 @@ grimoire create
 ```
 
 The wizard will guide you through:
+
 1. **Spell name** (e.g., `postgres`)
 2. **Transport type** (stdio, SSE, or HTTP)
 3. **Server configuration** (command, args, or URL)
@@ -160,6 +164,7 @@ The wizard will guide you through:
 5. **Server validation** (optional but recommended)
 
 **With server probing** (auto-generates steering and keywords):
+
 ```bash
 grimoire create --probe
 ```
@@ -223,6 +228,7 @@ server:
 The interactive wizard will prompt you for environment variables and suggest the `${VAR}` syntax by default. You can also provide literal values directly.
 
 **Spell File Location** (all platforms):
+
 - `~/.grimoire/` (follows Claude Code convention)
   - **macOS**: `/Users/username/.grimoire/`
   - **Windows**: `C:\Users\username\.grimoire\`
@@ -246,6 +252,7 @@ server:
 ```
 
 Examples:
+
 - `@modelcontextprotocol/server-postgres`
 - `@modelcontextprotocol/server-github`
 - `@cap-js/mcp-server`
@@ -279,6 +286,7 @@ server:
 ### Spawn Triggers
 
 **1. High Confidence Match (≥0.85)**
+
 ```
 User: "query my postgres database"
 → resolve_intent matches "postgres" with 0.94 confidence
@@ -287,6 +295,7 @@ User: "query my postgres database"
 ```
 
 **2. Manual Activation**
+
 ```
 User: "check my database"
 → resolve_intent returns alternatives: [postgres, mysql, mongodb]
@@ -296,6 +305,7 @@ User: "check my database"
 ```
 
 **3. Already Active**
+
 ```
 → Just update usage tracking
 → Time: ~5ms (no spawn overhead)
@@ -304,6 +314,7 @@ User: "check my database"
 ### Kill Triggers (5-Turn Inactivity)
 
 After **every tool call**, Grimoire checks:
+
 ```
 If (currentTurn - lastUsedTurn) >= 5:
   → Kill process
@@ -313,13 +324,13 @@ If (currentTurn - lastUsedTurn) >= 5:
 
 **Real-World Example** (E-commerce workflow):
 
-| Turn | Action | Active Spells | Event |
-|------|--------|---------------|-------|
-| 1-3 | Database queries | `[postgres]` | ✅ Postgres spawned |
-| 4-7 | Process payments | `[postgres, stripe]` | ✅ Stripe spawned |
-| 8 | Deploy CAP app | `[postgres, stripe, cap-js]` | ✅ Cap-js spawned |
-| 9 | CAP deployment | `[stripe, cap-js]` | ❌ Postgres killed (6 turns idle) |
-| 14 | CAP testing | `[cap-js]` | ❌ Stripe killed (7 turns idle) |
+| Turn | Action           | Active Spells                | Event                             |
+| ---- | ---------------- | ---------------------------- | --------------------------------- |
+| 1-3  | Database queries | `[postgres]`                 | ✅ Postgres spawned               |
+| 4-7  | Process payments | `[postgres, stripe]`         | ✅ Stripe spawned                 |
+| 8    | Deploy CAP app   | `[postgres, stripe, cap-js]` | ✅ Cap-js spawned                 |
+| 9    | CAP deployment   | `[stripe, cap-js]`           | ❌ Postgres killed (6 turns idle) |
+| 14   | CAP testing      | `[cap-js]`                   | ❌ Stripe killed (7 turns idle)   |
 
 **Result**: 3 spells → 1 spell (67% token reduction from peak)
 
@@ -349,6 +360,7 @@ grimoire create -n github -t stdio \
 ```
 
 **Features**:
+
 - Validates MCP server works before creating config
 - Auto-generates keywords from tool names
 - Creates intelligent steering instructions
@@ -368,6 +380,7 @@ grimoire list -v
 ```
 
 **Output**:
+
 ```
 📚 Spells in ~/.grimoire
 
@@ -387,6 +400,7 @@ grimoire validate ~/.grimoire/postgres.spell.yaml
 ```
 
 **Checks**:
+
 - Required fields (name, keywords, server.command/url)
 - Field types and formats
 - Minimum 3 keywords
@@ -411,6 +425,7 @@ grimoire example stdio -o ~/.grimoire/myspell.spell.yaml
 ### Claude Desktop
 
 **How It Works**:
+
 1. User asks: "Show users from database"
 2. Claude sees `resolve_intent` tool (always available)
 3. Claude calls: `resolve_intent({ query: "show users from database" })`
@@ -458,6 +473,7 @@ All 50 servers spawned at startup:
 ### Grimoire (Multi-Tier Strategy)
 
 **Weighted Average Calculation**:
+
 ```
 High confidence (70%):   1,000 tokens (selected tools only)
 Medium confidence (20%): 1,500 tokens (3 alternatives + tools)
@@ -501,6 +517,7 @@ git checkout -b feature/my-awesome-feature
 **3. Make Changes**
 
 Follow our coding principles:
+
 - **YAGNI**: Implement only what's needed now
 - **DRY**: Don't repeat yourself
 - **SRP**: Single Responsibility Principle
@@ -544,6 +561,7 @@ git push origin feature/my-awesome-feature
 ```
 
 Then open a PR on GitHub with:
+
 - Clear description of changes
 - Link to related issues
 - Screenshots/examples if applicable
@@ -612,6 +630,7 @@ pnpm test src/presentation/__tests__/gateway-real-workflow.integration.test.ts
 ### Code Quality Standards
 
 We maintain high code quality through:
+
 - ✅ 80%+ test coverage (unit + integration)
 - ✅ Strict TypeScript (`strict: true`)
 - ✅ ESLint + Prettier formatting
@@ -654,4 +673,4 @@ ISC © [Mohan Sharma](https://github.com/mohan-sharma-au7)
 
 **Made with ❤️ by [Mohan Sharma](https://github.com/mohan-sharma-au7)**
 
-*Special thanks to the MCP community and all contributors!*
+_Special thanks to the MCP community and all contributors!_

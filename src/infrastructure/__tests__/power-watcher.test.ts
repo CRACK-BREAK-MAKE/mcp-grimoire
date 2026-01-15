@@ -3,12 +3,12 @@
  * Tests file watching, debouncing, and event handling
  */
 
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {SpellWatcher} from '../spell-watcher';
-import type {SpellConfig} from '../../core/types';
-import {mkdirSync, readdirSync, rmdirSync, unlinkSync, writeFileSync} from 'fs';
-import {join} from 'path';
-import {tmpdir} from 'os';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SpellWatcher } from '../spell-watcher';
+import type { SpellConfig } from '../../core/types';
+import { mkdirSync, readdirSync, rmdirSync, unlinkSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 describe('SpellWatcher', () => {
   let testDir: string;

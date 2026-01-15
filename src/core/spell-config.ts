@@ -18,11 +18,7 @@ export class ConfigurationError extends Error {
  */
 export function isSpellConfig(obj: unknown): obj is SpellConfig {
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'name' in obj &&
-    'keywords' in obj &&
-    'server' in obj
+    typeof obj === 'object' && obj !== null && 'name' in obj && 'keywords' in obj && 'server' in obj
   );
 }
 
@@ -37,10 +33,7 @@ export function validateSpellConfig(config: SpellConfig): void {
   }
 
   if (!/^[a-z0-9-]+$/.test(config.name)) {
-    throw new ConfigurationError(
-      'Name must be alphanumeric with hyphens only',
-      'name'
-    );
+    throw new ConfigurationError('Name must be alphanumeric with hyphens only', 'name');
   }
 
   // Keywords validation
@@ -99,10 +92,7 @@ export function validateSpellConfig(config: SpellConfig): void {
     }
 
     if (config.steering.length > 5000) {
-      throw new ConfigurationError(
-        'Steering max 5000 characters',
-        'steering'
-      );
+      throw new ConfigurationError('Steering max 5000 characters', 'steering');
     }
   }
 }

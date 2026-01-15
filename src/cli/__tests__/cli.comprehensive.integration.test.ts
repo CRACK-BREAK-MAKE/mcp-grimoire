@@ -14,7 +14,12 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { execSync, spawn, type ChildProcess } from 'child_process';
 import { parse } from 'yaml';
-import type { SpellConfig, StdioServerConfig, SSEServerConfig, HTTPServerConfig } from '../../core/types';
+import type {
+  SpellConfig,
+  StdioServerConfig,
+  SSEServerConfig,
+  HTTPServerConfig,
+} from '../../core/types';
 
 describe('Comprehensive CLI Integration Test', () => {
   const cliBin = join(process.cwd(), 'dist/cli.js');
@@ -247,7 +252,9 @@ describe('Comprehensive CLI Integration Test', () => {
         createdSpells.push(spellName);
       } catch (error: unknown) {
         // HTTP probe may fail due to SDK connection handling - this is expected
-        console.log('ℹ️  HTTP probe failed (expected due to SDK limitations) - skipping validation');
+        console.log(
+          'ℹ️  HTTP probe failed (expected due to SDK limitations) - skipping validation'
+        );
         return;
       }
 
@@ -321,7 +328,9 @@ describe('Comprehensive CLI Integration Test', () => {
 
         // Should NOT create the spell file
         const spellPath = join(grimoireDir, `${spellName}.spell.yaml`);
-        expect(existsSync(spellPath), 'Should NOT create spell file for unreachable server').toBe(false);
+        expect(existsSync(spellPath), 'Should NOT create spell file for unreachable server').toBe(
+          false
+        );
       }
     }, 35000);
 
@@ -340,7 +349,9 @@ describe('Comprehensive CLI Integration Test', () => {
 
         // Should NOT create the spell file
         const spellPath = join(grimoireDir, `${spellName}.spell.yaml`);
-        expect(existsSync(spellPath), 'Should NOT create spell file for unreachable server').toBe(false);
+        expect(existsSync(spellPath), 'Should NOT create spell file for unreachable server').toBe(
+          false
+        );
       }
     }, 35000);
   });

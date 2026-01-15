@@ -130,9 +130,7 @@ describe('Spinner', () => {
 
       expect(stdoutWriteSpy).toHaveBeenCalled();
       const calls = stdoutWriteSpy.mock.calls;
-      const hasLoadingMessage = calls.some((call) =>
-        String(call[0]).includes('Loading...')
-      );
+      const hasLoadingMessage = calls.some((call) => String(call[0]).includes('Loading...'));
       expect(hasLoadingMessage).toBe(true);
 
       vi.useRealTimers();
@@ -271,7 +269,11 @@ describe('parseArgs', () => {
 
   it('should handle mixed quoted and unquoted args', () => {
     const result = parseArgs('-y @modelcontextprotocol/server-example "C:\\Program Files\\Node"');
-    expect(result).toEqual(['-y', '@modelcontextprotocol/server-example', 'C:\\Program Files\\Node']);
+    expect(result).toEqual([
+      '-y',
+      '@modelcontextprotocol/server-example',
+      'C:\\Program Files\\Node',
+    ]);
   });
 
   it('should handle consecutive quotes', () => {

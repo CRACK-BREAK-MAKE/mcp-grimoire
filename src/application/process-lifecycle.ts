@@ -302,39 +302,39 @@ export class ProcessLifecycleManager {
 
     this.saveDebounceTimer = setTimeout(() => {
       void (async (): Promise<void> => {
-      try {
-        // Collect active PIDs
-        const activePIDs: Record<string, number> = {};
-        for (const [name, connection] of this.connections.entries()) {
-          const pid = connection.process?.pid;
-          if (pid != null) {
-            activePIDs[name] = pid;
+        try {
+          // Collect active PIDs
+          const activePIDs: Record<string, number> = {};
+          for (const [name, connection] of this.connections.entries()) {
+            const pid = connection.process?.pid;
+            if (pid != null) {
+              activePIDs[name] = pid;
+            }
           }
+
+          // Update storage
+          this.storage!.updateLifecycleMetadata({
+            currentTurn: this.currentTurn,
+            usageTracking: Object.fromEntries(this.usageTracking.entries()),
+            activePIDs,
+            lastSaved: Date.now(),
+          });
+
+          // Persist to disk
+          await this.storage!.save();
+
+          logger.debug('LIFECYCLE', 'State saved to storage', {
+            turn: this.currentTurn,
+            activeSpells: this.activeSpells.size,
+            activePIDs: Object.keys(activePIDs).length,
+          });
+        } catch (err) {
+          logger.error(
+            'LIFECYCLE',
+            'Failed to save state',
+            err instanceof Error ? err : new Error(String(err))
+          );
         }
-
-        // Update storage
-        this.storage!.updateLifecycleMetadata({
-          currentTurn: this.currentTurn,
-          usageTracking: Object.fromEntries(this.usageTracking.entries()),
-          activePIDs,
-          lastSaved: Date.now(),
-        });
-
-        // Persist to disk
-        await this.storage!.save();
-
-        logger.debug('LIFECYCLE', 'State saved to storage', {
-          turn: this.currentTurn,
-          activeSpells: this.activeSpells.size,
-          activePIDs: Object.keys(activePIDs).length,
-        });
-      } catch (err) {
-        logger.error(
-          'LIFECYCLE',
-          'Failed to save state',
-          err instanceof Error ? err : new Error(String(err))
-        );
-      }
       })();
     }, this.SAVE_DEBOUNCE_MS);
   }
@@ -363,10 +363,7 @@ export class ProcessLifecycleManager {
       if (transport === 'stdio') {
         // Stdio: Spawn child process
         if (!('command' in config.server) || !('args' in config.server)) {
-          throw new ProcessSpawnError(
-            'Stdio transport requires command and args',
-            name
-          );
+          throw new ProcessSpawnError('Stdio transport requires command and args', name);
         }
 
         logger.info('SPAWN', 'Spawning stdio MCP server', {

@@ -24,9 +24,7 @@ describe('createCommand', () => {
     testDir = join(tmpdir(), `grimoire-create-test-${Date.now()}`);
     mkdirSync(testDir, { recursive: true });
 
-    getSpellDirectorySpy = vi
-      .spyOn(pathsModule, 'getSpellDirectory')
-      .mockReturnValue(testDir);
+    getSpellDirectorySpy = vi.spyOn(pathsModule, 'getSpellDirectory').mockReturnValue(testDir);
   });
 
   afterEach(() => {
@@ -271,9 +269,7 @@ describe('createCommand', () => {
       await createCommand({ name: 'test', transport: 'stdio', interactive: false });
 
       // Assert
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('grimoire validate')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('grimoire validate'));
     });
   });
 
@@ -378,9 +374,7 @@ describe('createCommand', () => {
         await createCommand({ name: 'test', transport: 'stdio', interactive: false });
       }).rejects.toThrow();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Directory not found')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Directory not found'));
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Run "grimoire" once to create the directory')
       );

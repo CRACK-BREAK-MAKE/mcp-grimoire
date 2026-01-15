@@ -27,13 +27,13 @@ export interface CreateOptions {
   name?: string;
   transport?: string;
   interactive?: boolean;
-  command?: string;  // For stdio: the command to run
-  args?: string[];   // For stdio: command arguments
-  url?: string;      // For sse/http: the URL
-  env?: Record<string, string> | string[];  // Environment variables for stdio (can be parsed from CLI)
-  probe?: boolean;   // Whether to probe the server before creating
-  auth?: AuthConfig;  // For http/sse: authentication config
-  headers?: Record<string, string>;  // For http/sse: custom headers
+  command?: string; // For stdio: the command to run
+  args?: string[]; // For stdio: command arguments
+  url?: string; // For sse/http: the URL
+  env?: Record<string, string> | string[]; // Environment variables for stdio (can be parsed from CLI)
+  probe?: boolean; // Whether to probe the server before creating
+  auth?: AuthConfig; // For http/sse: authentication config
+  headers?: Record<string, string>; // For http/sse: custom headers
   // CLI-specific auth fields (parsed into auth)
   authType?: string;
   authToken?: string;
@@ -65,16 +65,27 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
   // 2. Parse auth options from CLI flags into AuthConfig
   if (options.authType != null && options.authType.trim() !== '' && !options.auth) {
-    if (options.authType === 'bearer' && options.authToken != null && options.authToken.trim() !== '') {
+    if (
+      options.authType === 'bearer' &&
+      options.authToken != null &&
+      options.authToken.trim() !== ''
+    ) {
       options.auth = {
         type: 'bearer',
         token: options.authToken,
       };
     } else if (options.authType === 'client_credentials') {
-      if (options.authClientId == null || options.authClientId.trim() === '' ||
-          options.authClientSecret == null || options.authClientSecret.trim() === '' ||
-          options.authTokenUrl == null || options.authTokenUrl.trim() === '') {
-        throw new Error('OAuth Client Credentials requires --auth-client-id, --auth-client-secret, and --auth-token-url');
+      if (
+        options.authClientId == null ||
+        options.authClientId.trim() === '' ||
+        options.authClientSecret == null ||
+        options.authClientSecret.trim() === '' ||
+        options.authTokenUrl == null ||
+        options.authTokenUrl.trim() === ''
+      ) {
+        throw new Error(
+          'OAuth Client Credentials requires --auth-client-id, --auth-client-secret, and --auth-token-url'
+        );
       }
       options.auth = {
         type: 'client_credentials',
@@ -160,7 +171,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         if (needsEnv) {
           options.env = {};
           /* eslint-disable-next-line no-console */
-          console.log(`\n${formatInfo('Enter environment variables (press Enter with empty name when done)')}\n`);
+          console.log(
+            `\n${formatInfo('Enter environment variables (press Enter with empty name when done)')}\n`
+          );
 
           while (true) {
             const envName = await text({
@@ -182,7 +195,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
           if (Object.keys(options.env).length > 0) {
             /* eslint-disable-next-line no-console */
-            console.log(`\n${formatSuccess(`Added ${Object.keys(options.env).length} environment variable(s)`)}\n`);
+            console.log(
+              `\n${formatSuccess(`Added ${Object.keys(options.env).length} environment variable(s)`)}\n`
+            );
           }
         }
       }
@@ -197,7 +212,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
         if (shouldProbe) {
           /* eslint-disable-next-line no-console */
-          console.log(`\n${formatInfo('This will test if the server starts correctly and retrieve its tools.')}\n`);
+          console.log(
+            `\n${formatInfo('This will test if the server starts correctly and retrieve its tools.')}\n`
+          );
         }
       }
     } else {
@@ -266,7 +283,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         if (needsHeaders) {
           options.headers = {};
           /* eslint-disable-next-line no-console */
-          console.log(`\n${formatInfo('Enter custom headers (press Enter with empty name when done)')}\n`);
+          console.log(
+            `\n${formatInfo('Enter custom headers (press Enter with empty name when done)')}\n`
+          );
 
           while (true) {
             const headerName = await text({
@@ -288,7 +307,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
           if (Object.keys(options.headers).length > 0) {
             /* eslint-disable-next-line no-console */
-            console.log(`\n${formatSuccess(`Added ${Object.keys(options.headers).length} custom header(s)`)}\n`);
+            console.log(
+              `\n${formatSuccess(`Added ${Object.keys(options.headers).length} custom header(s)`)}\n`
+            );
           }
         }
       }
@@ -334,11 +355,15 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     console.error('Example: my-spell, postgres, github-api');
     process.exit(1);
   }
-   
 
   // Remote servers (SSE/HTTP) MUST always be probed to verify connectivity (if URL is provided)
   // Unlike stdio (where command might not be installed), remote servers should be running
-  if ((options.transport === 'sse' || options.transport === 'http') && options.url != null && options.url !== '' && options.probe === undefined) {
+  if (
+    (options.transport === 'sse' || options.transport === 'http') &&
+    options.url != null &&
+    options.url !== '' &&
+    options.probe === undefined
+  ) {
     options.probe = true;
   }
 
@@ -350,21 +375,30 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     if (options.transport === 'stdio') {
       if (options.command == null || options.command.trim() === '') {
         console.error(formatError('--command is required when using --probe with stdio transport'));
-        console.error('Example: grimoire create -n myspell -t stdio --command "npx" --args "-y @org/server" --probe --no-interactive');
-        console.error('Or create without probe: grimoire create -n myspell -t stdio --no-interactive');
+        console.error(
+          'Example: grimoire create -n myspell -t stdio --command "npx" --args "-y @org/server" --probe --no-interactive'
+        );
+        console.error(
+          'Or create without probe: grimoire create -n myspell -t stdio --no-interactive'
+        );
         process.exit(1);
       }
     }
 
     if (options.transport === 'sse' || options.transport === 'http') {
       if (options.url == null || options.url.trim() === '') {
-        console.error(formatError(`--url is required when using --probe with ${options.transport} transport`));
-        console.error(`Example: grimoire create -n myspell -t ${options.transport} --url "http://localhost:3000" --probe --no-interactive`);
-        console.error(`Or create without probe: grimoire create -n myspell -t ${options.transport} --no-interactive`);
+        console.error(
+          formatError(`--url is required when using --probe with ${options.transport} transport`)
+        );
+        console.error(
+          `Example: grimoire create -n myspell -t ${options.transport} --url "http://localhost:3000" --probe --no-interactive`
+        );
+        console.error(
+          `Or create without probe: grimoire create -n myspell -t ${options.transport} --no-interactive`
+        );
         process.exit(1);
       }
     }
-     
 
     const spinner = new Spinner();
     const probeMessage =
@@ -384,7 +418,7 @@ export async function createCommand(options: CreateOptions): Promise<void> {
           transport: 'stdio',
           command: options.command!,
           args: options.args || [],
-          env: options.env,  // Pass environment variables to probe
+          env: options.env, // Pass environment variables to probe
         },
       };
     } else if (options.transport === 'sse') {
@@ -435,7 +469,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         console.error('   - Server does not implement MCP protocol correctly');
         console.error(`\n${formatError('Cannot create spell for unreachable remote server.')}`);
         console.error(`   Please ensure the server is running at: ${options.url}`);
-        console.error(`   Then try again: grimoire create -n ${options.name} -t ${options.transport} --url "${options.url}"\n`);
+        console.error(
+          `   Then try again: grimoire create -n ${options.name} -t ${options.transport} --url "${options.url}"\n`
+        );
 
         process.exit(1);
       }
@@ -449,7 +485,10 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
       if (probeResult.tools && probeResult.tools.length > 0) {
         console.log(
-          `   ${dim('Tools:')} ${probeResult.tools.slice(0, 5).map((t) => t.name).join(', ')}${probeResult.tools.length > 5 ? '...' : ''}`
+          `   ${dim('Tools:')} ${probeResult.tools
+            .slice(0, 5)
+            .map((t) => t.name)
+            .join(', ')}${probeResult.tools.length > 5 ? '...' : ''}`
         );
       }
       /* eslint-enable no-console */
@@ -512,11 +551,17 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     if (options.auth?.type != null && options.auth.type !== 'none') {
       // Clone auth config but use original values for secrets
       const authConfig = { ...options.auth };
-      if (options.auth.type === 'bearer' && originalAuthToken != null && originalAuthToken.trim() !== '') {
+      if (
+        options.auth.type === 'bearer' &&
+        originalAuthToken != null &&
+        originalAuthToken.trim() !== ''
+      ) {
         authConfig.token = originalAuthToken;
       } else if (options.auth.type === 'client_credentials') {
-        if (originalAuthClientId != null && originalAuthClientId.trim() !== '') authConfig.clientId = originalAuthClientId;
-        if (originalAuthClientSecret != null && originalAuthClientSecret.trim() !== '') authConfig.clientSecret = originalAuthClientSecret;
+        if (originalAuthClientId != null && originalAuthClientId.trim() !== '')
+          authConfig.clientId = originalAuthClientId;
+        if (originalAuthClientSecret != null && originalAuthClientSecret.trim() !== '')
+          authConfig.clientSecret = originalAuthClientSecret;
       }
       config.server.auth = authConfig;
     }
@@ -550,10 +595,14 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     const allKeywords = [...new Set([...spellNameKeywords, ...toolKeywords])];
 
     // Use ONLY real keywords from tools/name, ensure at least 3
-    config.keywords = allKeywords.length >= 3 ? allKeywords : [...allKeywords, 'mcp', 'server', 'tools'].slice(0, 15);
+    config.keywords =
+      allKeywords.length >= 3
+        ? allKeywords
+        : [...allKeywords, 'mcp', 'server', 'tools'].slice(0, 15);
 
     // Update description with tool count
-    const baseDescription = typeof config.description === 'string' ? config.description : 'MCP Server';
+    const baseDescription =
+      typeof config.description === 'string' ? config.description : 'MCP Server';
     config.description = `${baseDescription}\n\nProvides ${probeResult.tools.length} tools for various operations.`;
   }
   /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
@@ -596,9 +645,13 @@ export async function createCommand(options: CreateOptions): Promise<void> {
       console.log(`   4. Customize the steering section with tool details and best practices`);
       console.log(`\n💡 Tip: Use --probe to test the server and auto-generate steering:`);
       if (options.transport === 'stdio') {
-        console.log(`   grimoire create -n ${options.name} -t stdio --command "your-command" --probe --no-interactive`);
+        console.log(
+          `   grimoire create -n ${options.name} -t stdio --command "your-command" --probe --no-interactive`
+        );
       } else {
-        console.log(`   grimoire create -n ${options.name} -t ${options.transport} --url "your-url" --probe --no-interactive`);
+        console.log(
+          `   grimoire create -n ${options.name} -t ${options.transport} --url "your-url" --probe --no-interactive`
+        );
       }
     }
     console.log(`\n${formatInfo(`Validate your spell: grimoire validate ${filePath}`)}`);

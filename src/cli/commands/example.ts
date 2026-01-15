@@ -45,7 +45,9 @@ export function exampleCommand(transport: string, options: ExampleOptions): void
       console.warn(`   Transport: ${transport}`);
       console.warn(`   Edit the file and update with your MCP server details.`);
     } catch (error) {
-      console.error(`Error writing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(
+        `Error writing file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       process.exit(1);
     }
   } else {

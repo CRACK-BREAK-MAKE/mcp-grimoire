@@ -1,6 +1,6 @@
-import {SteeringInjector} from '../steering-injector';
-import type {Tool} from '../../core/types';
-import {beforeEach, describe, expect, it} from 'vitest';
+import { SteeringInjector } from '../steering-injector';
+import type { Tool } from '../../core/types';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('SteeringInjector', () => {
   let injector: SteeringInjector;

@@ -1,9 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { SpellDiscovery } from '../application/spell-discovery';
 import { HybridResolver } from '../application/hybrid-resolver';
 import { SteeringInjector } from '../application/steering-injector';
@@ -152,7 +149,7 @@ export class GrimoireServer {
         totalSpellsIndexed: totalSpells,
         candidatesFound: results.length,
         resolutionTimeMs: resolutionTime,
-        topResults: results.slice(0, 3).map(r => ({
+        topResults: results.slice(0, 3).map((r) => ({
           spell: r.spellName,
           confidence: r.confidence.toFixed(3),
           matchType: r.matchType,
@@ -251,9 +248,9 @@ export class GrimoireServer {
 
       // Tier 2: Medium Confidence (0.5-0.84) - Return alternatives (top 3)
       if (topResult.confidence >= (ConfidenceTier.MEDIUM as number)) {
-        const alternatives: SpellAlternative[] = results.slice(0, 3).map((result) =>
-          this.toSpellAlternative(result)
-        );
+        const alternatives: SpellAlternative[] = results
+          .slice(0, 3)
+          .map((result) => this.toSpellAlternative(result));
 
         const response: ResolveIntentResponse = {
           status: 'multiple_matches',
@@ -267,7 +264,7 @@ export class GrimoireServer {
           tier: 'MEDIUM (0.50-0.84)',
           matchCount: alternatives.length,
           topConfidence: topResult.confidence.toFixed(3),
-          alternatives: alternatives.map(a => `${a.name} (${a.confidence.toFixed(3)})`),
+          alternatives: alternatives.map((a) => `${a.name} (${a.confidence.toFixed(3)})`),
           action: 'Returned alternatives for user selection',
         });
 
@@ -279,9 +276,9 @@ export class GrimoireServer {
       }
 
       // Tier 3a: Low Confidence (0.3-0.49) - Return weak matches (top 5)
-      const weakMatches: SpellAlternative[] = results.slice(0, 5).map((result) =>
-        this.toSpellAlternative(result)
-      );
+      const weakMatches: SpellAlternative[] = results
+        .slice(0, 5)
+        .map((result) => this.toSpellAlternative(result));
 
       const response: ResolveIntentResponse = {
         status: 'weak_matches',
@@ -295,7 +292,7 @@ export class GrimoireServer {
         tier: 'LOW (0.30-0.49)',
         matchCount: weakMatches.length,
         topConfidence: topResult.confidence.toFixed(3),
-        matches: weakMatches.map(m => `${m.name} (${m.confidence.toFixed(3)})`),
+        matches: weakMatches.map((m) => `${m.name} (${m.confidence.toFixed(3)})`),
         action: 'Returned weak matches for clarification',
       });
 
@@ -493,9 +490,10 @@ export class GrimoireServer {
       return {
         content: content.map((item) => ({
           type: item.type,
-          text: item.type === 'text' && item.text != null && item.text !== ''
-            ? item.text
-            : JSON.stringify(item),
+          text:
+            item.type === 'text' && item.text != null && item.text !== ''
+              ? item.text
+              : JSON.stringify(item),
         })),
       };
     } catch (error) {
@@ -574,9 +572,7 @@ export class GrimoireServer {
   /**
    * Public method for testing - handle resolve_intent call
    */
-  public async handleResolveIntentCall(
-    args: unknown
-  ): Promise<ResolveIntentResponse> {
+  public async handleResolveIntentCall(args: unknown): Promise<ResolveIntentResponse> {
     const result = await this.handleResolveIntent(args);
     return JSON.parse(result.content[0].text) as ResolveIntentResponse;
   }
@@ -621,7 +617,9 @@ export class GrimoireServer {
     console.error('╚═══════════════════════════════════════════════════════════════╝');
     console.error('');
     console.error(`Spells Directory: ${this.discovery.getSpellDirectory()}`);
-    console.error(`Debug Mode: ${isDebug ? '✓ ENABLED (verbose logs)' : '✗ Disabled (set GRIMOIRE_DEBUG=true to enable)'}`);
+    console.error(
+      `Debug Mode: ${isDebug ? '✓ ENABLED (verbose logs)' : '✗ Disabled (set GRIMOIRE_DEBUG=true to enable)'}`
+    );
     console.error('');
     console.error('✨ Features:');
     console.error('  • Intent Resolution: Keyword + Semantic matching');
@@ -663,15 +661,21 @@ export class GrimoireServer {
     logger.info('STARTUP', 'Loaded lifecycle state', {
       currentTurn: lifecycleMetadata?.currentTurn ?? 0,
       trackedSpells: Object.keys(lifecycleMetadata?.usageTracking ?? {}).length,
-      orphansCleanedOnStartup: lifecycleMetadata ? Object.keys(lifecycleMetadata.activePIDs).length : 0,
+      orphansCleanedOnStartup: lifecycleMetadata
+        ? Object.keys(lifecycleMetadata.activePIDs).length
+        : 0,
     });
 
     // Scan for spells
     const count = await this.discovery.scan();
-    logger.info('STARTUP', `Discovered ${count} spell(s) in ${this.discovery.getSpellDirectory()}`, {
-      count,
-      directory: this.discovery.getSpellDirectory(),
-    });
+    logger.info(
+      'STARTUP',
+      `Discovered ${count} spell(s) in ${this.discovery.getSpellDirectory()}`,
+      {
+        count,
+        directory: this.discovery.getSpellDirectory(),
+      }
+    );
 
     // Show helpful message if no spells found
     if (count === 0) {
@@ -744,7 +748,10 @@ export class GrimoireServer {
    * Calculate token savings from lazy loading
    * Estimates tokens saved by only loading 1 spell vs loading all spells upfront
    */
-  private calculateTokenSavings(activatedToolCount: number, totalSpells: number): {
+  private calculateTokenSavings(
+    activatedToolCount: number,
+    totalSpells: number
+  ): {
     estimatedTokensWithoutGateway: number;
     estimatedTokensWithGateway: number;
     tokensSaved: number;
@@ -763,7 +770,7 @@ export class GrimoireServer {
     const tokensWithoutGateway = totalTools * AVG_TOKENS_PER_TOOL;
 
     // With gateway: Only gateway tools + activated spell's tools
-    const tokensWithGateway = GATEWAY_TOOL_TOKENS + (activatedToolCount * AVG_TOKENS_PER_TOOL);
+    const tokensWithGateway = GATEWAY_TOOL_TOKENS + activatedToolCount * AVG_TOKENS_PER_TOOL;
 
     const tokensSaved = tokensWithoutGateway - tokensWithGateway;
     const percentageSaved = ((tokensSaved / tokensWithoutGateway) * 100).toFixed(1);

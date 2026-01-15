@@ -4,9 +4,9 @@
  * Following TDD: Testing critical lifecycle management component
  */
 
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {ProcessLifecycleManager, ProcessSpawnError} from '../process-lifecycle';
-import type {SpellConfig} from '../../core/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ProcessLifecycleManager, ProcessSpawnError } from '../process-lifecycle';
+import type { SpellConfig } from '../../core/types';
 
 // Mock child_process and MCP SDK
 vi.mock('child_process', () => ({
@@ -185,9 +185,7 @@ describe('ProcessLifecycleManager', () => {
         },
       };
 
-      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
-        ProcessSpawnError
-      );
+      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(ProcessSpawnError);
       await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
         'Stdio transport requires command and args'
       );
@@ -203,9 +201,7 @@ describe('ProcessLifecycleManager', () => {
         },
       };
 
-      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
-        ProcessSpawnError
-      );
+      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(ProcessSpawnError);
     });
 
     it('should pass environment variables to child process', async () => {
@@ -244,9 +240,7 @@ describe('ProcessLifecycleManager', () => {
         },
       };
 
-      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
-        ProcessSpawnError
-      );
+      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(ProcessSpawnError);
       await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
         'SSE transport requires url'
       );
@@ -271,9 +265,7 @@ describe('ProcessLifecycleManager', () => {
         },
       };
 
-      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
-        ProcessSpawnError
-      );
+      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(ProcessSpawnError);
       await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
         'HTTP transport requires url'
       );
@@ -292,9 +284,7 @@ describe('ProcessLifecycleManager', () => {
         },
       };
 
-      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
-        ProcessSpawnError
-      );
+      await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(ProcessSpawnError);
       await expect(manager.spawn('invalid', invalidConfig)).rejects.toThrow(
         'Unknown transport: unknown'
       );
@@ -447,5 +437,4 @@ describe('ProcessLifecycleManager', () => {
       expect(names2).toHaveLength(1);
     });
   });
-
 });

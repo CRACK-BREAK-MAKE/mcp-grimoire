@@ -109,21 +109,23 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
 
     // Mock the lifecycle manager to avoid actually spawning processes
     // @ts-expect-error - Accessing private property for testing
-    vi.spyOn(gateway.lifecycle, 'spawn').mockImplementation(async (name: string, config: SpellConfig) => {
-      // Return mock tools for the power
-      return [
-        {
-          name: `${name}_tool_1`,
-          description: `Mock tool 1 for ${name}`,
-          inputSchema: { type: 'object', properties: {}, required: [] },
-        },
-        {
-          name: `${name}_tool_2`,
-          description: `Mock tool 2 for ${name}`,
-          inputSchema: { type: 'object', properties: {}, required: [] },
-        },
-      ];
-    });
+    vi.spyOn(gateway.lifecycle, 'spawn').mockImplementation(
+      async (name: string, config: SpellConfig) => {
+        // Return mock tools for the power
+        return [
+          {
+            name: `${name}_tool_1`,
+            description: `Mock tool 1 for ${name}`,
+            inputSchema: { type: 'object', properties: {}, required: [] },
+          },
+          {
+            name: `${name}_tool_2`,
+            description: `Mock tool 2 for ${name}`,
+            inputSchema: { type: 'object', properties: {}, required: [] },
+          },
+        ];
+      }
+    );
 
     // Mock isActive to return false initially (not spawned)
     // @ts-expect-error - Accessing private property for testing
@@ -292,7 +294,7 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
       const result = response as ResolveIntentResponse;
 
       if (result.status === 'multiple_matches') {
-        const confidences = result.matches.map(m => m.confidence);
+        const confidences = result.matches.map((m) => m.confidence);
 
         // Check sorted descending
         for (let i = 0; i < confidences.length - 1; i++) {
@@ -415,7 +417,7 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
         expect(result.availableSpells.length).toBe(5); // All test powers
 
         // Should include all our test powers
-        const powerNames = result.availableSpells.map(p => p.name);
+        const powerNames = result.availableSpells.map((p) => p.name);
         expect(powerNames).toContain('postgres');
         expect(powerNames).toContain('stripe');
       }
@@ -466,15 +468,13 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
     });
 
     it('should throw error for non-existent power', async () => {
-      await expect(
-        gateway.handleActivateSpellCall({ name: 'nonexistent' })
-      ).rejects.toThrow(/not found|invalid|unknown/i);
+      await expect(gateway.handleActivateSpellCall({ name: 'nonexistent' })).rejects.toThrow(
+        /not found|invalid|unknown/i
+      );
     });
 
     it('should throw error for empty power name', async () => {
-      await expect(
-        gateway.handleActivateSpellCall({ name: '' })
-      ).rejects.toThrow();
+      await expect(gateway.handleActivateSpellCall({ name: '' })).rejects.toThrow();
     });
 
     it('should return same tools if power already active', async () => {
@@ -597,8 +597,8 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
       // Before activation: Only gateway tools (resolve_intent, activate_spell)
       const toolsBefore = gateway.getAvailableTools();
       expect(toolsBefore.length).toBe(2);
-      expect(toolsBefore.map(t => t.name)).toContain('resolve_intent');
-      expect(toolsBefore.map(t => t.name)).toContain('activate_spell');
+      expect(toolsBefore.map((t) => t.name)).toContain('resolve_intent');
+      expect(toolsBefore.map((t) => t.name)).toContain('activate_spell');
 
       // Activate a spell
       const response = await gateway.handleResolveIntentCall({
@@ -611,7 +611,7 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
       expect(toolsAfter.length).toBeGreaterThan(2); // Should have more than just gateway tools
 
       // CRITICAL: Gateway tools must still be present
-      const toolNames = toolsAfter.map(t => t.name);
+      const toolNames = toolsAfter.map((t) => t.name);
       expect(toolNames).toContain('resolve_intent');
       expect(toolNames).toContain('activate_spell');
 
@@ -631,9 +631,9 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
       expect(response1.status).toBe('activated');
 
       const toolsAfterFirst = gateway.getAvailableTools();
-      expect(toolsAfterFirst.map(t => t.name)).toContain('resolve_intent');
-      expect(toolsAfterFirst.map(t => t.name)).toContain('activate_spell');
-      expect(toolsAfterFirst.map(t => t.name)).toContain('postgres_tool_1');
+      expect(toolsAfterFirst.map((t) => t.name)).toContain('resolve_intent');
+      expect(toolsAfterFirst.map((t) => t.name)).toContain('activate_spell');
+      expect(toolsAfterFirst.map((t) => t.name)).toContain('postgres_tool_1');
 
       // Activate second spell (simulate user's scenario: first cabs, then flight)
       const response2 = await gateway.handleResolveIntentCall({
@@ -642,7 +642,7 @@ describe('PowerGatewayServer - Multi-Tier Confidence (ADR-0009)', () => {
 
       // After second activation: Gateway tools + all active spell tools
       const toolsAfterSecond = gateway.getAvailableTools();
-      const toolNames = toolsAfterSecond.map(t => t.name);
+      const toolNames = toolsAfterSecond.map((t) => t.name);
 
       // CRITICAL: Gateway tools must STILL be present
       expect(toolNames).toContain('resolve_intent');

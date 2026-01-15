@@ -59,7 +59,7 @@ describe('OAuth Client Credentials (Phase 2)', () => {
       expect(fetchOptions.method).toBe('POST');
       expect(fetchOptions.headers).toMatchObject({
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': expect.stringMatching(/^Basic /),
+        Authorization: expect.stringMatching(/^Basic /),
       });
 
       // Verify body contains grant_type

@@ -1,6 +1,6 @@
-import {ToolRouter} from '../tool-router';
-import type {Tool} from '../../core/types';
-import {beforeEach, describe, expect, it} from 'vitest';
+import { ToolRouter } from '../tool-router';
+import type { Tool } from '../../core/types';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('ToolRouter', () => {
   let router: ToolRouter;

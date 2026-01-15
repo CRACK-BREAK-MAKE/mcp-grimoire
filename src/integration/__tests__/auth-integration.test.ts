@@ -81,21 +81,23 @@ describe('Authentication Integration Tests - Wild West Scenarios', () => {
     console.log('\n🚀 Starting authenticated test servers...\n');
 
     // Start SSE server with Bearer auth
-    sseBearerServer = spawn('tsx', [
-      'tests/fixtures/test-servers/sse-bearer-auth-server.ts',
-      String(SSE_BEARER_PORT),
-    ], {
-      env: { ...process.env, TEST_AUTH_TOKEN: BEARER_TOKEN },
-    });
+    sseBearerServer = spawn(
+      'tsx',
+      ['tests/fixtures/test-servers/sse-bearer-auth-server.ts', String(SSE_BEARER_PORT)],
+      {
+        env: { ...process.env, TEST_AUTH_TOKEN: BEARER_TOKEN },
+      }
+    );
     await waitForServer(sseBearerServer, 'SSE_BEARER_SERVER_READY', 'SSE Bearer Server');
 
     // Start HTTP server with Bearer auth
-    httpBearerServer = spawn('tsx', [
-      'tests/fixtures/test-servers/http-bearer-auth-server.ts',
-      String(HTTP_BEARER_PORT),
-    ], {
-      env: { ...process.env, TEST_AUTH_TOKEN: BEARER_TOKEN },
-    });
+    httpBearerServer = spawn(
+      'tsx',
+      ['tests/fixtures/test-servers/http-bearer-auth-server.ts', String(HTTP_BEARER_PORT)],
+      {
+        env: { ...process.env, TEST_AUTH_TOKEN: BEARER_TOKEN },
+      }
+    );
     await waitForServer(httpBearerServer, 'HTTP_BEARER_SERVER_READY', 'HTTP Bearer Server');
 
     // Start OAuth token server
@@ -106,15 +108,16 @@ describe('Authentication Integration Tests - Wild West Scenarios', () => {
     await waitForServer(oauthTokenServer, 'OAUTH_TOKEN_SERVER_READY', 'OAuth Token Server');
 
     // Start HTTP server with OAuth
-    httpOAuthServer = spawn('tsx', [
-      'tests/fixtures/test-servers/http-oauth-server.ts',
-      String(HTTP_OAUTH_PORT),
-    ], {
-      env: {
-        ...process.env,
-        TOKEN_INTROSPECTION_URL: `http://localhost:${OAUTH_TOKEN_PORT}/introspect`,
-      },
-    });
+    httpOAuthServer = spawn(
+      'tsx',
+      ['tests/fixtures/test-servers/http-oauth-server.ts', String(HTTP_OAUTH_PORT)],
+      {
+        env: {
+          ...process.env,
+          TOKEN_INTROSPECTION_URL: `http://localhost:${OAUTH_TOKEN_PORT}/introspect`,
+        },
+      }
+    );
     await waitForServer(httpOAuthServer, 'HTTP_OAUTH_SERVER_READY', 'HTTP OAuth Server');
 
     console.log('\n✅ All test servers started successfully\n');

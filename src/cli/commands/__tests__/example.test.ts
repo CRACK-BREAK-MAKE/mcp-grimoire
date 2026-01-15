@@ -77,9 +77,7 @@ describe('exampleCommand', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Invalid transport type')
       );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('stdio, sse, http')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('stdio, sse, http'));
     });
 
     it('should reject websocket transport', async () => {
@@ -231,9 +229,7 @@ describe('exampleCommand', () => {
       await exampleCommand('stdio', { output: outputPath });
 
       // Assert
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/✅.*Spell template created:/)
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/✅.*Spell template created:/));
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining(outputPath));
     });
   });

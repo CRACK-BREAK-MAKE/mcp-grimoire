@@ -56,15 +56,15 @@ type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
  * Makes it easy to filter logs by component
  */
 type Component =
-  | 'STARTUP'   // Initialization, discovery
-  | 'INTENT'    // Intent resolution
-  | 'SPAWN'     // Process/connection spawning
-  | 'TOOL'      // Tool invocation
+  | 'STARTUP' // Initialization, discovery
+  | 'INTENT' // Intent resolution
+  | 'SPAWN' // Process/connection spawning
+  | 'TOOL' // Tool invocation
   | 'LIFECYCLE' // Cleanup, turn tracking
-  | 'MCP'       // MCP protocol details
-  | 'WATCH'     // File watching
-  | 'CACHE'     // Embedding cache
-  | 'AUTH';     // Authentication (Bearer, OAuth)
+  | 'MCP' // MCP protocol details
+  | 'WATCH' // File watching
+  | 'CACHE' // Embedding cache
+  | 'AUTH'; // Authentication (Bearer, OAuth)
 
 interface LogContext {
   [key: string]: unknown;
@@ -144,7 +144,7 @@ export class Logger {
       ? {
           name: error.name,
           message: error.message,
-          stack: this.isDebugMode || this.isTraceMode ? error.stack : undefined
+          stack: this.isDebugMode || this.isTraceMode ? error.stack : undefined,
         }
       : undefined;
 

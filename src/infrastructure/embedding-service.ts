@@ -120,9 +120,7 @@ export class EmbeddingService {
 
       // Validate output dimension
       if (embedding.length !== this.dimension) {
-        throw new Error(
-          `Expected ${this.dimension}-dim embedding, got ${embedding.length}`
-        );
+        throw new Error(`Expected ${this.dimension}-dim embedding, got ${embedding.length}`);
       }
 
       return embedding;

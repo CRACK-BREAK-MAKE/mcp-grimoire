@@ -61,7 +61,9 @@ export function listCommand(options: ListOptions): void {
         }
       } catch (error) {
         console.error(
-          formatWarning(`${file}: Failed to parse (${error instanceof Error ? error.message : 'unknown error'})`)
+          formatWarning(
+            `${file}: Failed to parse (${error instanceof Error ? error.message : 'unknown error'})`
+          )
         );
       }
     }
@@ -73,14 +75,13 @@ export function listCommand(options: ListOptions): void {
     }
     /* eslint-enable no-console */
   } catch (error) {
-     
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       console.error(formatError(`Directory not found: ${spellDir}`));
       console.error('Run the gateway once to create it automatically.');
     } else {
       console.error(formatError(error instanceof Error ? error.message : 'Unknown error'));
     }
-     
+
     process.exit(1);
   }
 }

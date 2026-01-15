@@ -200,7 +200,8 @@ export async function text(options: PromptOptions): Promise<string> {
 
   return new Promise((resolve) => {
     const promptText = formatPrompt(options.message);
-    const defaultText = options.default != null && options.default !== '' ? ` ${formatDefault(options.default)}` : '';
+    const defaultText =
+      options.default != null && options.default !== '' ? ` ${formatDefault(options.default)}` : '';
     rl.question(`${promptText}${defaultText}: `, (answer) => {
       rl.close();
 
@@ -231,9 +232,12 @@ export async function select(options: SelectOptions): Promise<string> {
     const num = supportsColor() ? `${colors.cyan}${index + 1}${colors.reset}` : `${index + 1}`;
     const label = bold(opt.label);
     const description = opt.description != null ? dim(`\n     ${opt.description}`) : '';
-    const isDefault = opt.value === options.default
-      ? supportsColor() ? ` ${colors.green}(default)${colors.reset}` : ' (default)'
-      : '';
+    const isDefault =
+      opt.value === options.default
+        ? supportsColor()
+          ? ` ${colors.green}(default)${colors.reset}`
+          : ' (default)'
+        : '';
 
     console.warn(`  ${num}. ${label}${isDefault}${description}`);
   });
@@ -241,9 +245,10 @@ export async function select(options: SelectOptions): Promise<string> {
   const rl = createInterface();
 
   return new Promise((resolve) => {
-    const defaultNum = options.default != null && options.default !== ''
-      ? options.options.findIndex((o) => o.value === options.default) + 1
-      : 1;
+    const defaultNum =
+      options.default != null && options.default !== ''
+        ? options.options.findIndex((o) => o.value === options.default) + 1
+        : 1;
 
     const promptText = dim(`Select (1-${options.options.length}) [${defaultNum}]`);
     rl.question(`\n${promptText}: `, (answer) => {

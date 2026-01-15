@@ -1,6 +1,6 @@
-import {KeywordResolver} from '../intent-resolver';
-import type {SpellConfig} from '../../core/types';
-import {beforeEach, describe, expect, it} from 'vitest';
+import { KeywordResolver } from '../intent-resolver';
+import type { SpellConfig } from '../../core/types';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('KeywordResolver', () => {
   let resolver: KeywordResolver;

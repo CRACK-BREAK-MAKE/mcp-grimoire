@@ -99,9 +99,14 @@ export function createAuthProvider(
 ): { getAccessToken: () => Promise<string> } | undefined {
   // Phase 2: OAuth Client Credentials
   if (auth?.type === 'client_credentials') {
-    if (auth.clientId == null || auth.clientId.trim() === '' ||
-        auth.clientSecret == null || auth.clientSecret.trim() === '' ||
-        auth.tokenUrl == null || auth.tokenUrl.trim() === '') {
+    if (
+      auth.clientId == null ||
+      auth.clientId.trim() === '' ||
+      auth.clientSecret == null ||
+      auth.clientSecret.trim() === '' ||
+      auth.tokenUrl == null ||
+      auth.tokenUrl.trim() === ''
+    ) {
       logger.error('AUTH', 'Missing required fields for client_credentials auth');
       return undefined;
     }

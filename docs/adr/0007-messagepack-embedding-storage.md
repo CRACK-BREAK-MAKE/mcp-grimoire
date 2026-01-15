@@ -18,6 +18,7 @@ Phase 2 adds semantic search capability to the gateway using sentence transforme
 6. **Maintainable**: Simple format without heavy dependencies
 
 **Current Requirements**:
+
 - Store embeddings for ~10-100 spell configurations
 - Each embedding: 384 floats (1536 bytes raw)
 - Load all embeddings at startup for cosine similarity search
@@ -25,6 +26,7 @@ Phase 2 adds semantic search capability to the gateway using sentence transforme
 - Support cache invalidation (power description/keyword changes)
 
 **User Constraints**:
+
 - "Should be smallest npm package possible"
 - "Keep vectors in file instead of memory"
 - "Should not be kept in readable file [like JSON]"
@@ -38,32 +40,40 @@ Use **MessagePack binary format** for single-file embedding storage at `~/.grimo
 
 ```typescript
 interface EmbeddingStore {
-  version: string;           // Format version (e.g., "1.0.0")
-  modelName: string;         // Model identifier
-  dimension: number;         // Vector dimension (384)
-  powers: Record<string, {   // Spell name → embedding data
-    vector: number[];        // 384-dim embedding
-    hash: string;            // SHA-256 of (description + keywords)
-    timestamp: number;       // Unix timestamp of last update
-  }>;
+  version: string; // Format version (e.g., "1.0.0")
+  modelName: string; // Model identifier
+  dimension: number; // Vector dimension (384)
+  powers: Record<
+    string,
+    {
+      // Spell name → embedding data
+      vector: number[]; // 384-dim embedding
+      hash: string; // SHA-256 of (description + keywords)
+      timestamp: number; // Unix timestamp of last update
+    }
+  >;
 }
 ```
 
 **File Location**: Cross-platform user data directory (see ADR-0008)
+
 - macOS: `~/Library/Caches/grimoire/embeddings.msgpack`
 - Windows: `%LOCALAPPDATA%\grimoire\Cache\embeddings.msgpack`
 - Linux: `~/.cache/grimoire/embeddings.msgpack` (respects `$XDG_CACHE_HOME`)
 - Implementation: Use `env-paths` npm package for correct OS-specific paths
 
 **Dependencies**:
+
 - `msgpackr` (45KB, fastest MessagePack implementation with record extension)
 - `chokidar` (190KB, cross-platform file watching with native OS APIs)
 - `env-paths` (2.4KB, cross-platform path resolution)
 
 **Node.js Requirements**:
+
 - Node.js >= 20.0.0 (chokidar v5 requirement)
 
 **Operations**:
+
 - **Load**: Read entire file, decode MessagePack (50ms for 100 powers)
 - **Save**: Encode and write entire file (30ms)
 - **Lookup**: Linear scan of in-memory Map (1-5ms for 100 powers)
@@ -77,11 +87,13 @@ interface EmbeddingStore {
 ✅ **Minimal Package Size**: +237KB dependencies (msgpackr 45KB + chokidar 190KB + env-paths 2.4KB) vs 50MB+ for vector databases
 
 ✅ **Fast Performance**:
+
 - Load time: <50ms for 100 powers (1-time cost at startup)
 - Similarity search: <5ms for 100 cosine similarity calculations
 - Sufficient for linear scan with <100 powers
 
 ✅ **50% Space Savings vs JSON**:
+
 - JSON: ~300KB for 100 powers (human-readable overhead)
 - MessagePack: ~150KB for 100 powers (binary encoding)
 
@@ -92,6 +104,7 @@ interface EmbeddingStore {
 ✅ **Cache Invalidation**: Hash-based detection of spell config changes
 
 ✅ **Cross-Platform**: Works on macOS, Linux, Windows using `env-paths` package (see ADR-0008)
+
 - macOS: `~/Library/Caches/grimoire/`
 - Windows: `%LOCALAPPDATA%\grimoire\Cache\`
 - Linux: `~/.cache/grimoire/` (respects XDG directories)
@@ -103,36 +116,44 @@ interface EmbeddingStore {
 ### Negative Consequences
 
 ❌ **Not Optimized for Scale**: Linear scan breaks down at ~1000+ powers
+
 - Mitigation: This is acceptable for Phase 2 scope (<100 powers)
 - Future: Can migrate to vector DB if needed (YAGNI principle)
 
 ❌ **No Concurrent Writes**: File lock not implemented
+
 - Mitigation: Single-process assumption (gateway is single instance)
 - Risk: Corruption if multiple gateway instances (unlikely scenario)
 
 ❌ **No Indexing**: No HNSW, FAISS, or other ANN algorithms
+
 - Mitigation: Exact search with linear scan is fast enough (<5ms)
 - Quality: Better accuracy than approximate nearest neighbors
 
 ❌ **Full File Rewrites**: Updating one embedding rewrites entire file
+
 - Mitigation: Updates are infrequent (only when spell configs change)
 - Performance: 30ms write time is acceptable for rare updates
 
 ### Risks
 
 ⚠️ **File Corruption**: Power failure during write could corrupt file
+
 - Mitigation: Atomic write pattern (write to temp, rename)
 - Recovery: Regenerate embeddings from spell configs (5s startup cost)
 
 ⚠️ **Model Version Mismatch**: Changing embedding model invalidates all vectors
+
 - Mitigation: Store model name/version in file, detect mismatch
 - Recovery: Clear embeddings and regenerate with new model
 
 ⚠️ **Disk Space**: Could grow unbounded if not cleaned up
+
 - Mitigation: Single file, bounded by number of powers
 - Example: 1000 powers = 1.5MB (negligible)
 
 ⚠️ **Stale Embeddings**: User adds/modifies `.spell.yaml` but embeddings not updated
+
 - Mitigation: Automatic file watching with `chokidar` v5 (uses native OS APIs: FSEvents on macOS, inotify on Linux, ReadDirectoryChangesW on Windows)
 - Auto-regenerate embeddings when `.spell.yaml` files change
 - `awaitWriteFinish` configuration (200ms stability threshold) handles editor double-saves
@@ -155,11 +176,13 @@ interface EmbeddingStore {
 ```
 
 **Pros**:
+
 - Human-readable for debugging
 - No additional dependencies (use built-in JSON.parse/stringify)
 - Easy to inspect and edit manually
 
 **Cons**:
+
 - **2x larger file size**: ~300KB vs 150KB for 100 powers
 - **Slower parsing**: JSON.parse is 3-5x slower than MessagePack decode
 - **User explicitly rejected**: "What stupidity is this? Should it not be kept as non-readable file instead?"
@@ -178,11 +201,13 @@ interface EmbeddingStore {
 ```
 
 **Pros**:
+
 - **Smallest possible size**: ~160KB for 100 powers
 - **No dependencies**: Use Node.js Buffer API
 - **Fastest parsing**: Direct memory mapping
 
 **Cons**:
+
 - **No metadata flexibility**: Fixed schema, hard to version
 - **Complex implementation**: Manual offset calculations, padding, alignment
 - **Brittle**: Schema changes require migration code
@@ -195,12 +220,14 @@ interface EmbeddingStore {
 **Approach**: Use dedicated vector database (ChromaDB, Qdrant, Weaviate, Pinecone)
 
 **Pros**:
+
 - **Production-ready**: Battle-tested, optimized for vectors
 - **Advanced features**: Filtered search, ANN indexing (HNSW), metadata queries
 - **Horizontal scaling**: Supports 1M+ vectors
 - **True RAG pattern**: Industry-standard solution
 
 **Cons**:
+
 - **Massive dependency**: ChromaDB alone is 50MB+ (25% of typical npm package)
 - **External process**: Requires database server (Docker or local process)
 - **Overkill for <100 vectors**: HNSW indexing slower than linear scan at this scale
@@ -214,12 +241,14 @@ interface EmbeddingStore {
 **Approach**: Use SQLite database with sqlite-vec extension
 
 **Pros**:
+
 - **Single file database**: Embedded, no external process
 - **ACID transactions**: Crash safety guarantees
 - **Vector similarity search**: Native cosine similarity support
 - **Metadata queries**: SQL for complex filtering
 
 **Cons**:
+
 - **10MB+ dependency**: better-sqlite3 + sqlite-vec
 - **Slower than MessagePack**: SQLite overhead for simple key-value lookups
 - **Requires native compilation**: Potential installation issues
@@ -232,10 +261,12 @@ interface EmbeddingStore {
 **Approach**: Use embedded key-value store
 
 **Pros**:
+
 - **Efficient storage**: LSM tree design
 - **Fast writes**: Optimized for write-heavy workloads
 
 **Cons**:
+
 - **5MB+ dependency**: level or rocksdb
 - **Complex API**: Need to understand LSM trees, compaction
 - **Overkill**: Key-value store when we need simple file persistence
@@ -269,7 +300,7 @@ export async function ensureDirectories(): Promise<void> {
 ```typescript
 await writeFile(getEmbeddingCachePath(), data);
 if (process.platform !== 'win32') {
-  await chmod(getEmbeddingCachePath(), 0o600);  // User read/write only
+  await chmod(getEmbeddingCachePath(), 0o600); // User read/write only
 }
 ```
 
@@ -282,21 +313,16 @@ const ALLOWED_COMMANDS = ['npx', 'node'];
 
 function validateCommand(command: string): void {
   // Whitelist: npx, node, or absolute paths only
-  const isAllowed = ALLOWED_COMMANDS.includes(command) ||
-                    path.isAbsolute(command);
+  const isAllowed = ALLOWED_COMMANDS.includes(command) || path.isAbsolute(command);
 
   if (!isAllowed) {
-    throw new ConfigurationError(
-      `Command must be 'npx', 'node', or absolute path: ${command}`
-    );
+    throw new ConfigurationError(`Command must be 'npx', 'node', or absolute path: ${command}`);
   }
 
   // Reject shell metacharacters
   const shellMetachars = /[;&|`$()]/;
   if (shellMetachars.test(command)) {
-    throw new ConfigurationError(
-      `Command contains shell metacharacters: ${command}`
-    );
+    throw new ConfigurationError(`Command contains shell metacharacters: ${command}`);
   }
 }
 ```
@@ -308,9 +334,7 @@ function validateArgs(args: string[]): void {
   for (const arg of args) {
     // Reject shell metacharacters in arguments
     if (/[;&|`$()]/.test(arg)) {
-      throw new ConfigurationError(
-        `Argument contains shell metacharacters: ${arg}`
-      );
+      throw new ConfigurationError(`Argument contains shell metacharacters: ${arg}`);
     }
   }
 }
@@ -330,6 +354,7 @@ computeHash(powerConfig: SpellConfig): string {
 ```
 
 **Cache Poisoning Prevention**:
+
 - Recompute if hash mismatch detected
 - File permissions prevent unauthorized modification
 - Integrity check on load (MessagePack CRC)
@@ -353,6 +378,7 @@ const child = spawn(config.server.command, config.server.args, {
 ```
 
 **Resource Limits**:
+
 - Max 10 concurrent child processes
 - Kill processes after 1 hour uptime (safety)
 - Monitor for abnormal CPU/memory usage
@@ -362,15 +388,18 @@ const child = spawn(config.server.command, config.server.args, {
 ### Phase 2 Day 1-2: Initial Implementation
 
 1. **Install dependencies**:
+
    ```bash
    pnpm add msgpackr chokidar env-paths @xenova/transformers
    ```
+
    - `msgpackr`: Binary serialization (45KB, record extension for optimization)
    - `chokidar`: Cross-platform file watching (190KB, native OS event APIs)
    - `env-paths`: Cross-platform paths (2.4KB, handles XDG on Linux)
    - `@xenova/transformers`: Embedding model (auto-downloads ~23MB quantized model on first run)
 
 2. **Create path utility** (`src/utils/paths.ts`):
+
    ```typescript
    import envPaths from 'env-paths';
    import { join } from 'path';
@@ -379,9 +408,9 @@ const child = spawn(config.server.command, config.server.args, {
    const paths = envPaths('grimoire', { suffix: '' });
 
    export const PATHS = {
-     config: paths.config,  // Spell configurations
-     cache: paths.cache,    // Embedding cache
-     log: paths.log,        // Log files
+     config: paths.config, // Spell configurations
+     cache: paths.cache, // Embedding cache
+     log: paths.log, // Log files
    };
 
    export function getSpellDirectory(): string {
@@ -400,13 +429,14 @@ const child = spawn(config.server.command, config.server.args, {
 
      // Set restrictive permissions on Unix systems
      if (process.platform !== 'win32') {
-       await chmod(PATHS.config, 0o700);  // Owner read/write/execute only
+       await chmod(PATHS.config, 0o700); // Owner read/write/execute only
        await chmod(PATHS.cache, 0o700);
      }
    }
    ```
 
 3. **Create embedding storage module** (`src/infrastructure/embedding-storage.ts`):
+
    ```typescript
    import { readFile, writeFile, rename, mkdir } from 'fs/promises';
    import { pack, unpack } from 'msgpackr';
@@ -461,6 +491,7 @@ const child = spawn(config.server.command, config.server.args, {
    ```
 
 4. **Create file watcher** (`src/infrastructure/power-watcher.ts`):
+
    ```typescript
    import chokidar from 'chokidar';
    import { getSpellDirectory } from '../utils/paths';
@@ -475,13 +506,14 @@ const child = spawn(config.server.command, config.server.args, {
 
        this.watcher = chokidar.watch(pattern, {
          persistent: true,
-         ignoreInitial: false,  // We want initial 'add' events for discovery
-         awaitWriteFinish: {    // Handle editors that save in multiple writes
+         ignoreInitial: false, // We want initial 'add' events for discovery
+         awaitWriteFinish: {
+           // Handle editors that save in multiple writes
            stabilityThreshold: 200,
            pollInterval: 100,
          },
-         usePolling: false,     // Use native OS events
-         depth: 0,              // Don't watch subdirectories
+         usePolling: false, // Use native OS events
+         depth: 0, // Don't watch subdirectories
        });
 
        this.watcher.on('add', onChange);
@@ -537,15 +569,15 @@ const child = spawn(config.server.command, config.server.args, {
 
 Target metrics (to be validated in testing):
 
-| Operation                | Target    | Measured | Status |
-| ------------------------ | --------- | -------- | ------ |
-| Load 10 powers           | <10ms     | TBD      | ⏳     |
-| Load 50 powers           | <30ms     | TBD      | ⏳     |
-| Load 100 powers          | <50ms     | TBD      | ⏳     |
-| Save 100 powers          | <50ms     | TBD      | ⏳     |
-| Similarity search (100)  | <5ms      | TBD      | ⏳     |
-| File size (100 powers)   | <200KB    | TBD      | ⏳     |
-| Package size increase    | <250KB    | TBD      | ⏳     |
+| Operation               | Target | Measured | Status |
+| ----------------------- | ------ | -------- | ------ |
+| Load 10 powers          | <10ms  | TBD      | ⏳     |
+| Load 50 powers          | <30ms  | TBD      | ⏳     |
+| Load 100 powers         | <50ms  | TBD      | ⏳     |
+| Save 100 powers         | <50ms  | TBD      | ⏳     |
+| Similarity search (100) | <5ms   | TBD      | ⏳     |
+| File size (100 powers)  | <200KB | TBD      | ⏳     |
+| Package size increase   | <250KB | TBD      | ⏳     |
 
 ## Migration Path
 

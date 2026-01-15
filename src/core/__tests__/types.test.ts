@@ -1,5 +1,5 @@
-import {isSpellConfig} from '../types';
-import {describe, expect, it} from 'vitest';
+import { isSpellConfig } from '../types';
+import { describe, expect, it } from 'vitest';
 
 describe('Type Guards', () => {
   describe('isSpellConfig', () => {

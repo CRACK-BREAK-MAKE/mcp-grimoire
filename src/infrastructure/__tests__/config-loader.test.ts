@@ -1,7 +1,7 @@
-import {YAMLConfigLoader} from '../config-loader';
-import {ConfigurationError} from '../../core/spell-config';
-import {join} from 'path';
-import {beforeEach, describe, expect, it} from 'vitest';
+import { YAMLConfigLoader } from '../config-loader';
+import { ConfigurationError } from '../../core/spell-config';
+import { join } from 'path';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('YAMLConfigLoader', () => {
   let loader: YAMLConfigLoader;

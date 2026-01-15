@@ -1,7 +1,7 @@
-import {SpellDiscovery} from '../spell-discovery';
-import type {ConfigLoader} from '../../infrastructure/config-loader';
-import type {SpellConfig} from '../../core/types';
-import {beforeEach, describe, expect, it} from 'vitest';
+import { SpellDiscovery } from '../spell-discovery';
+import type { ConfigLoader } from '../../infrastructure/config-loader';
+import type { SpellConfig } from '../../core/types';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 // Mock ConfigLoader
 class MockConfigLoader implements ConfigLoader {

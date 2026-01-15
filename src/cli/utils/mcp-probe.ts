@@ -60,7 +60,11 @@ export async function probeMCPServer(
   try {
     // Create MCP client transport based on type
     if (transportType === 'stdio') {
-      const serverConfig = config.server as { command: string; args?: readonly string[]; env?: Readonly<Record<string, string>> };
+      const serverConfig = config.server as {
+        command: string;
+        args?: readonly string[];
+        env?: Readonly<Record<string, string>>;
+      };
       transport = new StdioClientTransport({
         command: serverConfig.command,
         args: serverConfig.args ? [...serverConfig.args] : [],
@@ -370,7 +374,10 @@ function generateCompactToolList(tools: Tool[]): string {
 
       // Add compact params
       if (tool.inputSchema != null && typeof tool.inputSchema === 'object') {
-        const schema = tool.inputSchema as { properties?: Record<string, unknown>; required?: string[] };
+        const schema = tool.inputSchema as {
+          properties?: Record<string, unknown>;
+          required?: string[];
+        };
         const required = schema.required ?? [];
         if (required.length > 0) {
           output += ` | Required: ${required.join(', ')}`;
@@ -394,15 +401,20 @@ function generateWorkflow(tools: Tool[], _domain: string): string {
   const toolNames = tools.map((t) => t.name.toLowerCase());
 
   // Detect discovery tools (list, search, get, find)
-  const hasDiscovery = toolNames.some((n) => n.includes('list') || n.includes('search') || n.includes('find'));
+  const hasDiscovery = toolNames.some(
+    (n) => n.includes('list') || n.includes('search') || n.includes('find')
+  );
 
   // Detect action tools (create, update, delete, execute)
   const hasActions = toolNames.some(
-    (n) => n.includes('create') || n.includes('update') || n.includes('delete') || n.includes('execute')
+    (n) =>
+      n.includes('create') || n.includes('update') || n.includes('delete') || n.includes('execute')
   );
 
   // Detect validation tools
-  const hasValidation = toolNames.some((n) => n.includes('validate') || n.includes('verify') || n.includes('test'));
+  const hasValidation = toolNames.some(
+    (n) => n.includes('validate') || n.includes('verify') || n.includes('test')
+  );
 
   // Build workflow
   let workflow = '1. **Discovery**: ';

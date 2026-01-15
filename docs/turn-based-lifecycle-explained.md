@@ -58,7 +58,7 @@ function getInactiveSpells(threshold: number): string[] {
     const turnsSinceUse = currentTurn - usage.lastUsedTurn;
 
     if (turnsSinceUse >= threshold) {
-      inactive.push(spellName);  // Will be killed
+      inactive.push(spellName); // Will be killed
     }
   }
 
@@ -67,6 +67,7 @@ function getInactiveSpells(threshold: number): string[] {
 ```
 
 **Example**:
+
 - Current turn: 9
 - Postgres last used: Turn 3
 - Calculation: `9 - 3 = 6 turns inactive`
@@ -79,23 +80,23 @@ function getInactiveSpells(threshold: number): string[] {
 
 ### Scenario: Developer building checkout flow with database queries, payments, and framework research
 
-| Turn | User Says | Claude Does | currentTurn | postgres.lastUsed | stripe.lastUsed | cap-js.lastUsed | Active | Event |
-|------|-----------|-------------|-------------|-------------------|-----------------|-----------------|--------|-------|
-| 1 | "Show recent orders" | `resolve_intent` → spawn postgres | 1 | 1 | - | - | postgres | ✅ Postgres spawned |
-| 2 | "Filter >$100" | `postgres_query_table` | 2 | 2 | - | - | postgres | Postgres used |
-| 3 | "User details for order 12345" | `postgres_query_table` | 3 | 3 | - | - | postgres | Postgres used |
-| 4 | "Process refund via Stripe" | `resolve_intent` → spawn stripe | 4 | 3 | 4 | - | postgres, stripe | ✅ Stripe spawned, postgres idle |
-| 5 | "Refund $50 to abc@example.com" | `stripe_create_refund` | 5 | 3 | 5 | - | postgres, stripe | Stripe used, postgres idle (2 turns) |
-| 6 | "Check refund status" | `stripe_get_refund` | 6 | 3 | 6 | - | postgres, stripe | Stripe used, postgres idle (3 turns) |
-| 7 | "Send confirmation email" | `stripe_send_receipt` | 7 | 3 | 7 | - | postgres, stripe | Stripe used, postgres idle (4 turns) |
-| 8 | "Explain CAP framework" | `resolve_intent` → spawn cap-js | 8 | 3 | 7 | 8 | postgres, stripe, cap-js | ✅ Cap-js spawned, postgres idle (5 turns) |
-| 9 | "Explain CDS entities" | `cap_search_docs` + **cleanup()** | 9 | - | 7 | 9 | stripe, cap-js | ❌ **Postgres KILLED** (6 turns idle) |
-| 10 | "Show CAP examples" | `cap_search_docs` | 10 | - | 7 | 10 | stripe, cap-js | Postgres gone |
-| 11 | "Create service definition" | `cap_generate_code` | 11 | - | 7 | 11 | stripe, cap-js | Stripe idle (4 turns) |
-| 12 | "Add auth annotations" | `cap_generate_code` | 12 | - | 7 | 12 | stripe, cap-js | Stripe idle (5 turns) |
-| 13 | "Deploy service" | `cap_deploy` | 13 | - | 7 | 13 | stripe, cap-js | Stripe idle (6 turns) |
-| 14 | "Test API endpoint" | `cap_test_service` + **cleanup()** | 14 | - | - | 14 | cap-js | ❌ **Stripe KILLED** (7 turns idle) |
-| 15 | "Show orders again" | `resolve_intent` → spawn postgres | 15 | 15 | - | 14 | postgres, cap-js | ✅ **Postgres RE-SPAWNED** (seamless) |
+| Turn | User Says                       | Claude Does                        | currentTurn | postgres.lastUsed | stripe.lastUsed | cap-js.lastUsed | Active                   | Event                                      |
+| ---- | ------------------------------- | ---------------------------------- | ----------- | ----------------- | --------------- | --------------- | ------------------------ | ------------------------------------------ |
+| 1    | "Show recent orders"            | `resolve_intent` → spawn postgres  | 1           | 1                 | -               | -               | postgres                 | ✅ Postgres spawned                        |
+| 2    | "Filter >$100"                  | `postgres_query_table`             | 2           | 2                 | -               | -               | postgres                 | Postgres used                              |
+| 3    | "User details for order 12345"  | `postgres_query_table`             | 3           | 3                 | -               | -               | postgres                 | Postgres used                              |
+| 4    | "Process refund via Stripe"     | `resolve_intent` → spawn stripe    | 4           | 3                 | 4               | -               | postgres, stripe         | ✅ Stripe spawned, postgres idle           |
+| 5    | "Refund $50 to abc@example.com" | `stripe_create_refund`             | 5           | 3                 | 5               | -               | postgres, stripe         | Stripe used, postgres idle (2 turns)       |
+| 6    | "Check refund status"           | `stripe_get_refund`                | 6           | 3                 | 6               | -               | postgres, stripe         | Stripe used, postgres idle (3 turns)       |
+| 7    | "Send confirmation email"       | `stripe_send_receipt`              | 7           | 3                 | 7               | -               | postgres, stripe         | Stripe used, postgres idle (4 turns)       |
+| 8    | "Explain CAP framework"         | `resolve_intent` → spawn cap-js    | 8           | 3                 | 7               | 8               | postgres, stripe, cap-js | ✅ Cap-js spawned, postgres idle (5 turns) |
+| 9    | "Explain CDS entities"          | `cap_search_docs` + **cleanup()**  | 9           | -                 | 7               | 9               | stripe, cap-js           | ❌ **Postgres KILLED** (6 turns idle)      |
+| 10   | "Show CAP examples"             | `cap_search_docs`                  | 10          | -                 | 7               | 10              | stripe, cap-js           | Postgres gone                              |
+| 11   | "Create service definition"     | `cap_generate_code`                | 11          | -                 | 7               | 11              | stripe, cap-js           | Stripe idle (4 turns)                      |
+| 12   | "Add auth annotations"          | `cap_generate_code`                | 12          | -                 | 7               | 12              | stripe, cap-js           | Stripe idle (5 turns)                      |
+| 13   | "Deploy service"                | `cap_deploy`                       | 13          | -                 | 7               | 13              | stripe, cap-js           | Stripe idle (6 turns)                      |
+| 14   | "Test API endpoint"             | `cap_test_service` + **cleanup()** | 14          | -                 | -               | 14              | cap-js                   | ❌ **Stripe KILLED** (7 turns idle)        |
+| 15   | "Show orders again"             | `resolve_intent` → spawn postgres  | 15          | 15                | -               | 14              | postgres, cap-js         | ✅ **Postgres RE-SPAWNED** (seamless)      |
 
 ### Key Insights from This Example
 
@@ -126,6 +127,7 @@ cap-js:    Turn 1, Turn 2, Turn 3  [WRONG]
 ```
 
 This doesn't work because:
+
 - No way to compare activity across spells
 - Can't detect context switching (user moving to different domain)
 - Cleanup becomes ambiguous (kill postgres at its turn 5? But what if only 2 global turns passed?)
@@ -140,6 +142,7 @@ cap-js:    lastUsedTurn = 14
 ```
 
 This works because:
+
 - Clear timeline: All spells on same clock
 - Easy inactivity detection: `currentTurn - lastUsedTurn`
 - Natural context switching: User shifts focus → old spells become inactive → cleanup
@@ -182,6 +185,7 @@ export class ProcessLifecycleManager {
 **File**: `src/presentation/gateway.ts`
 
 **Current** (line 411):
+
 ```typescript
 private async handleToolCall(toolName: string, args: unknown) {
   // ... existing code ...
@@ -193,6 +197,7 @@ private async handleToolCall(toolName: string, args: unknown) {
 ```
 
 **Needed**:
+
 ```typescript
 private async handleToolCall(toolName: string, args: unknown) {
   // ... existing code ...
@@ -247,6 +252,7 @@ Savings: 1050 tokens (37% reduction)
 ```
 
 Over 100 turns with 10 spells:
+
 - Without cleanup: 8000+ tokens (all spells active)
 - With cleanup: 1800 tokens (≤3 spells active)
 - **Savings: 77% token reduction** 🎉
@@ -262,6 +268,7 @@ Over 100 turns with 10 spells:
 ### Q: Will this kill spells I'm actively using?
 
 **A**: No. The 5-turn threshold protects multi-step workflows. Example:
+
 - Turn 1: Query database
 - Turn 2: Analyze results
 - Turn 3: Modify data
@@ -273,6 +280,7 @@ All these happen within 5 turns, so the spell stays active throughout.
 ### Q: What if I alternate between two spells?
 
 **A**: Both stay active as long as you use each within 5 turns. Example:
+
 - Turn 1: Use postgres
 - Turn 2: Use stripe
 - Turn 3: Use postgres (resets lastUsedTurn)
