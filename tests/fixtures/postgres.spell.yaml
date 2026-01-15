@@ -1,0 +1,24 @@
+name: postgres
+version: 1.0.0
+description: PostgreSQL database operations
+keywords:
+  - database
+  - sql
+  - query
+  - postgres
+  - users
+server:
+  command: npx
+  args:
+    - '-y'
+    - '@modelcontextprotocol/server-postgres'
+  env:
+    DATABASE_URL: postgresql://localhost/test
+steering: |
+  # Database Schema
+  Tables:
+    - users (id, email, created_at)
+    - orders (id, user_id, amount, status)
+
+  # Security: Always use parameterized queries
+  # Performance: Use indexes for date filters

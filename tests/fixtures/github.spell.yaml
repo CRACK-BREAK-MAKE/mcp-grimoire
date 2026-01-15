@@ -1,0 +1,13 @@
+name: github
+version: 1.0.0
+description: GitHub repository management
+keywords:
+  - github
+  - git
+  - repos
+  - code
+server:
+  command: npx
+  args:
+    - '-y'
+    - '@modelcontextprotocol/server-github'

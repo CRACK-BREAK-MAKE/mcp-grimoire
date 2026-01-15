@@ -1,0 +1,11 @@
+echo "🔍 Running client pre-commit checks..."
+pnpm exec lint-staged
+CLIENT_EXIT=$?
+
+
+if [ $CLIENT_EXIT -ne 0 ]; then
+  echo "❌ Pre-commit checks failed!"
+  exit 1
+fi
+
+echo "✅ All checks passed!"

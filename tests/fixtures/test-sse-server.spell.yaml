@@ -1,0 +1,19 @@
+name: test-sse-server
+version: 1.0.0
+description: Test MCP server via SSE transport for integration testing
+keywords:
+  - test
+  - sse
+  - integration
+  - sample
+server:
+  transport: sse
+  url: http://127.0.0.1:8000/sse
+steering: |
+  # Test Server Configuration
+  This is a test MCP server using SSE (Server-Sent Events) transport.
+
+  Usage Guidelines:
+  - This server is for integration testing only
+  - Tools available will depend on what the server exposes
+  - SSE transport provides real-time updates

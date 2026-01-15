@@ -1,0 +1,6 @@
+name: invalid
+keywords:
+  - only
+  - two
+server:
+  command: echo

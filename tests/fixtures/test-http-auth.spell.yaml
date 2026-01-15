@@ -1,0 +1,18 @@
+name: test-http-auth
+version: 1.0.0
+description: Test spell with HTTP Bearer token authentication
+keywords:
+  - test
+  - auth
+  - http
+  - protected
+server:
+  transport: http
+  url: http://localhost:3333/mcp
+  auth:
+    type: bearer
+    token: test-token-123
+steering: |
+  This is a test HTTP server that requires Bearer token authentication.
+
+  Use this to verify that Bearer tokens are properly passed in Authorization headers.

@@ -1,0 +1,102 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# TypeScript build artifacts (from composite builds)
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env*.local
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# AI-specific development files (not for community)
+claude.md
+docs/plans/
+
+# IDE
+.vscode
+!.vscode/settings.json
+!.vscode/extensions.json
+.vscode/mcp.json
+.idea/*
+!.idea/vcs.xml
+!.idea/modules.xml
+*.iml
+.DS_Store
+
+# Claude Code session data (personal)
+.claude/
+
+# Logs
+*.log
+
+# Python (server)
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg
+*.egg-info/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+coverage/
+html/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IMPORTANT: .husky/ directory should NOT be ignored
+# It contains git hooks that need to be committed to the repository
+# Only ignore user-specific IDE files, not the hooks themselves
+*.tgz
+*.bak
