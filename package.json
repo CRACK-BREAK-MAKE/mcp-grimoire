@@ -20,6 +20,9 @@
     "url": "https://github.com/crack-break-make/mcp-grimoire/issues"
   },
   "homepage": "https://github.com/crack-break-make/mcp-grimoire#readme",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "prepare": "husky",
     "dev": "tsx watch src/index.ts",

@@ -44,6 +44,10 @@ export interface CreateOptions {
 }
 
 export async function createCommand(options: CreateOptions): Promise<void> {
+  // Ensure grimoire directory exists before doing anything
+  const { ensureDirectories } = await import('../../utils/paths');
+  await ensureDirectories();
+
   // Preserve original CLI values BEFORE expansion (for YAML file)
   const originalEnv = Array.isArray(options.env) ? [...options.env] : options.env;
   const originalAuthToken = options.authToken;
