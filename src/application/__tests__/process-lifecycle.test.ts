@@ -447,4 +447,5 @@ describe('ProcessLifecycleManager', () => {
       expect(names2).toHaveLength(1);
     });
   });
+
 });

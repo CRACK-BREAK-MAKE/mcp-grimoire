@@ -100,7 +100,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 9
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -128,7 +128,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 9
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -166,7 +166,7 @@ jobs:
           echo "✅ Shebang present in CLI"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-${{ github.sha }}
           path: dist/

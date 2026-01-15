@@ -76,7 +76,7 @@ program
   .action(async (options: CreateOptions) => {
     try {
       await createCommand(options);
-    } catch (error) {
+    } catch {
       // Error already logged by createCommand, just exit
       process.exit(1);
     }

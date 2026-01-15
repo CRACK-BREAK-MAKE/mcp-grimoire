@@ -1192,9 +1192,13 @@ server:
   command: npx
   args:
     - "-y"
-    - "mcp-server-stripe"
+    - "@stripe/mcp"
+    - "--api-key"
+    - "${STRIPE_API_KEY}"
+    - "--tools"
+    - "customers,charges,payment_intents"
   env:
-    STRIPE_API_KEY: ${STRIPE_API_KEY}  # Set your Stripe test key
+    STRIPE_API_KEY: ${STRIPE_API_KEY}  # Set your Stripe test key (also pass via --api-key arg)
 
 keywords:
   - payment
