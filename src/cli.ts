@@ -75,6 +75,10 @@ program
   .option('--no-interactive', 'Non-interactive mode (uses defaults)')
   .action(async (options: CreateOptions) => {
     try {
+      // Ensure grimoire directory exists before creating spell
+      const { ensureDirectories } = await import('./utils/paths');
+      await ensureDirectories();
+
       await createCommand(options);
     } catch {
       // Error already logged by createCommand, just exit
