@@ -50,13 +50,7 @@ MCP Grimoire achieves **97% token reduction** through:
 
 ## 🚀 Quick Start
 
-### Installation
-
-```bash
-npm install -g @crack-break-make/mcp-grimoire
-```
-
-### Configure with Claude Desktop
+### 1. Configure MCP Server (in Claude Desktop / GitHub Copilot)
 
 Add to your `claude_desktop_config.json`:
 
@@ -74,15 +68,62 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop - Grimoire is now active!
+**Restart Claude Desktop** - Grimoire MCP server is now running!
 
-### Configure with GitHub Copilot (VS Code)
+### 2. Create Spells (in Terminal)
 
-Add to your VS Code settings (`settings.json`):
+**Open a terminal** and run CLI commands to manage spells:
+
+```bash
+# Create a new spell (interactive wizard)
+npx @crack-break-make/mcp-grimoire create
+
+# List installed spells
+npx @crack-break-make/mcp-grimoire list
+
+# Validate a spell configuration
+npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
+```
+
+**Key Point**:
+
+- 🖥️ **MCP Server** runs inside Claude Desktop (configured via mcp.json)
+- 💻 **CLI Commands** run in your terminal (to create/manage spells)
+- Same package, two modes - automatically detected!
+
+### 3. Use in Claude
+
+Ask Claude to interact with your tools:
+
+```
+Show me all users from the database
+```
+
+Grimoire will automatically activate the right MCP server based on your query!
+
+---
+
+## 🎭 Dual-Mode Operation
+
+MCP Grimoire intelligently detects how it's being called:
+
+| Mode           | How It's Called                  | Purpose                           | Example                                |
+| -------------- | -------------------------------- | --------------------------------- | -------------------------------------- |
+| **MCP Server** | From `mcp.json` with stdio pipes | Runs as MCP gateway for AI agents | Claude Desktop spawns it automatically |
+| **CLI Tool**   | From terminal with arguments     | Manage spell configurations       | `npx mcp-grimoire create`              |
+
+**You only install once** - the entry point detects the mode automatically:
+
+- stdin is not a TTY (piped) → MCP Server mode
+- stdin is a TTY + CLI args → CLI mode
+
+### GitHub Copilot (VS Code)
+
+Add to `.vscode/mcp.json` or project `mcp.json`:
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "grimoire": {
       "command": "npx",
       "args": ["-y", "@crack-break-make/mcp-grimoire"]
@@ -90,6 +131,8 @@ Add to your VS Code settings (`settings.json`):
   }
 }
 ```
+
+Then use CLI in terminal to create spells (same as above).
 
 ---
 
@@ -336,27 +379,45 @@ If (currentTurn - lastUsedTurn) >= 5:
 
 ---
 
-## 🛠️ CLI Commands
+## 🛠️ CLI Commands (Run in Terminal)
 
-### `grimoire create`
+**Important**: CLI commands run in your **terminal**, not in Claude Desktop. The MCP server runs inside Claude automatically.
+
+### `npx @crack-break-make/mcp-grimoire create`
 
 Create new spell configurations with interactive wizard:
 
 ```bash
-# Interactive mode (guided)
-grimoire create
+# Interactive mode (guided) - RECOMMENDED
+npx @crack-break-make/mcp-grimoire create
 
 # With server validation (auto-generates steering)
-grimoire create --probe
+npx @crack-break-make/mcp-grimoire create --probe
 
 # Non-interactive mode
-grimoire create -n postgres -t stdio --command npx --args "-y @org/server"
+npx @crack-break-make/mcp-grimoire create \
+  -n postgres \
+  -t stdio \
+  --command npx \
+  --args "-y" "@modelcontextprotocol/server-postgres"
 
 # With environment variables (for authenticated servers)
-grimoire create -n github -t stdio \
+npx @crack-break-make/mcp-grimoire create \
+  -n github \
+  -t stdio \
   --command npx \
-  --args "-y @modelcontextprotocol/server-github" \
-  --env.GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
+  --args "-y" "@modelcontextprotocol/server-github" \
+  --env "GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}"
+```
+
+**Optional**: Install globally for shorter command:
+
+```bash
+npm install -g @crack-break-make/mcp-grimoire
+
+# Now use short form:
+grimoire create
+grimoire list
 ```
 
 **Features**:
@@ -367,16 +428,16 @@ grimoire create -n github -t stdio \
 - Supports environment variables for authenticated servers
 - Supports all transport types (stdio, SSE, HTTP)
 
-### `grimoire list`
+### `npx @crack-break-make/mcp-grimoire list`
 
 List all installed spells:
 
 ```bash
 # Simple list
-grimoire list
+npx @crack-break-make/mcp-grimoire list
 
 # Verbose output with details
-grimoire list -v
+npx @crack-break-make/mcp-grimoire list -v
 ```
 
 **Output**:
@@ -391,12 +452,12 @@ grimoire list -v
 ✓ Total: 3 spells
 ```
 
-### `grimoire validate`
+### `npx @crack-break-make/mcp-grimoire validate`
 
 Validate spell configuration:
 
 ```bash
-grimoire validate ~/.grimoire/postgres.spell.yaml
+npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
 ```
 
 **Checks**:
@@ -406,16 +467,16 @@ grimoire validate ~/.grimoire/postgres.spell.yaml
 - Minimum 3 keywords
 - Transport-specific requirements
 
-### `grimoire example`
+### `npx @crack-break-make/mcp-grimoire example`
 
 Generate example templates:
 
 ```bash
 # Output to stdout
-grimoire example stdio
+npx @crack-break-make/mcp-grimoire example stdio
 
 # Output to file
-grimoire example stdio -o ~/.grimoire/myspell.spell.yaml
+npx @crack-break-make/mcp-grimoire example stdio -o ~/.grimoire/myspell.spell.yaml
 ```
 
 ---

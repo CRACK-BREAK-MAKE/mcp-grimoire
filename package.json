@@ -1,12 +1,13 @@
 {
   "name": "@crack-break-make/mcp-grimoire",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.0",
   "description": "Your spellbook for MCP servers - intelligent orchestration with lazy loading and expert incantations",
   "main": "dist/index.js",
   "bin": {
     "grimoire": "./dist/cli.js",
-    "mcp-grimoire": "./dist/cli.js"
+    "mcp-grimoire": "./dist/index.js"
   },
+  "types": "dist/index.d.ts",
   "files": [
     "dist/**/*",
     "README.md",
