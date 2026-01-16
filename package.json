@@ -45,8 +45,10 @@
   "lint-staged": {
     "*.ts": [
       "secretlint",
-      "eslint --fix --max-warnings 0",
       "prettier --write"
+    ],
+    "src/**/*.ts": [
+      "eslint --fix --max-warnings 0"
     ],
     "*.{js,json,yaml,yml,md}": [
       "secretlint",
@@ -63,7 +65,7 @@
     "orchestrator",
     "lazy-loading"
   ],
-  "author": "I504180",
+  "author": "Mohan Sharma",
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",

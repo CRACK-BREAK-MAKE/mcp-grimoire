@@ -109,30 +109,27 @@ export class GrimoireServer {
    * Tier 2 (0.5-0.84): Return alternatives
    * Tier 3a (0.3-0.49): Return weak matches
    * Tier 3b (<0.3): Return not found
+   *
+   * Validates inputs at boundary before processing to fail fast with clear errors
    */
   private async handleResolveIntent(
     args: unknown
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Validate args is an object before destructuring
+    if (args === null || args === undefined || typeof args !== 'object') {
+      return this.createNotFoundResponse('', 'args must be an object with a query property');
+    }
+
     const { query } = args as { query: string };
 
-    // Validate query
+    // Validate query is a string before calling .trim()
+    if (typeof query !== 'string') {
+      return this.createNotFoundResponse('', 'query must be a string');
+    }
+
+    // Validate query is not empty
     if (!query || query.trim().length === 0) {
-      const spells = this.discovery.getSpells();
-      const response: ResolveIntentResponse = {
-        status: 'not_found',
-        query: query || '',
-        message: 'Query cannot be empty',
-        availableSpells: Array.from(spells.entries()).map(([name, config]) => ({
-          name,
-          description: config.description,
-        })),
-      };
-
-      this.lifecycle.incrementTurn(); // Count as turn even without spawning
-
-      return {
-        content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
-      };
+      return this.createNotFoundResponse(query || '', 'Query cannot be empty');
     }
 
     try {
@@ -415,6 +412,32 @@ export class GrimoireServer {
       matchType: result.matchType,
       description: config?.description ?? 'No description available',
       keywords: config?.keywords.slice(0, 5) ?? [], // First 5 keywords for context
+    };
+  }
+
+  /**
+   * Helper: Create error response for invalid inputs (DRY principle)
+   * Validate at boundaries, fail fast with explicit errors
+   */
+  private createNotFoundResponse(
+    query: string,
+    message: string
+  ): { content: Array<{ type: string; text: string }> } {
+    const spells = this.discovery.getSpells();
+    const response: ResolveIntentResponse = {
+      status: 'not_found',
+      query,
+      message,
+      availableSpells: Array.from(spells.entries()).map(([name, config]) => ({
+        name,
+        description: config.description,
+      })),
+    };
+
+    this.lifecycle.incrementTurn(); // Count as turn even without spawning
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
     };
   }
 

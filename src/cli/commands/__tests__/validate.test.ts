@@ -710,4 +710,585 @@ server:
       expect(allErrors).toContain('Field "server.transport" must be one of');
     });
   });
+
+  describe('Authentication Validation', () => {
+    it('should fail when bearer auth is missing token', async () => {
+      // Arrange
+      const filePath = join(testDir, 'bearer-no-token.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: bearer
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.token')
+      );
+    });
+
+    it('should fail when bearer auth has empty token', async () => {
+      // Arrange
+      const filePath = join(testDir, 'bearer-empty-token.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: bearer
+    token: ""
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.token')
+      );
+    });
+
+    it('should fail when client_credentials is missing clientId', async () => {
+      // Arrange
+      const filePath = join(testDir, 'client-creds-no-id.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: client_credentials
+    clientSecret: secret
+    tokenUrl: http://localhost:3000/token
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.clientId')
+      );
+    });
+
+    it('should fail when client_credentials is missing clientSecret', async () => {
+      // Arrange
+      const filePath = join(testDir, 'client-creds-no-secret.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: client_credentials
+    clientId: client-id
+    tokenUrl: http://localhost:3000/token
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.clientSecret')
+      );
+    });
+
+    it('should fail when client_credentials is missing tokenUrl', async () => {
+      // Arrange
+      const filePath = join(testDir, 'client-creds-no-token-url.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: client_credentials
+    clientId: client-id
+    clientSecret: secret
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.tokenUrl')
+      );
+    });
+
+    it('should fail when oauth2 is missing clientId', async () => {
+      // Arrange
+      const filePath = join(testDir, 'oauth2-no-client-id.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: oauth2
+    authorizationUrl: http://localhost:3000/authorize
+    tokenUrl: http://localhost:3000/token
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.clientId')
+      );
+    });
+
+    it('should fail when oauth2 is missing authorizationUrl', async () => {
+      // Arrange
+      const filePath = join(testDir, 'oauth2-no-auth-url.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: oauth2
+    clientId: client-id
+    tokenUrl: http://localhost:3000/token
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.authorizationUrl')
+      );
+    });
+
+    it('should fail when oauth2 is missing tokenUrl', async () => {
+      // Arrange
+      const filePath = join(testDir, 'oauth2-no-token-url.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: oauth2
+    clientId: client-id
+    authorizationUrl: http://localhost:3000/authorize
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.tokenUrl')
+      );
+    });
+
+    it('should fail when auth type is invalid', async () => {
+      // Arrange
+      const filePath = join(testDir, 'invalid-auth-type.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: api_key
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Field "server.auth.type" must be one of')
+      );
+    });
+
+    it('should fail when auth is not an object', async () => {
+      // Arrange
+      const filePath = join(testDir, 'auth-not-object.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth: "string-value"
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Field "server.auth" must be an object')
+      );
+    });
+
+    it('should fail when auth.type is missing', async () => {
+      // Arrange
+      const filePath = join(testDir, 'auth-no-type.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    token: some-token
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing required field: server.auth.type')
+      );
+    });
+
+    it('should pass validation for valid bearer auth', async () => {
+      // Arrange
+      const filePath = join(testDir, 'valid-bearer.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: bearer
+    token: \${BEARER_TOKEN}
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+    });
+
+    it('should pass validation for valid client_credentials auth', async () => {
+      // Arrange
+      const filePath = join(testDir, 'valid-client-creds.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: client_credentials
+    clientId: \${CLIENT_ID}
+    clientSecret: \${CLIENT_SECRET}
+    tokenUrl: http://localhost:3000/token
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+    });
+
+    it('should pass validation for valid oauth2 auth', async () => {
+      // Arrange
+      const filePath = join(testDir, 'valid-oauth2.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: oauth2
+    clientId: \${CLIENT_ID}
+    authorizationUrl: http://localhost:3000/authorize
+    tokenUrl: http://localhost:3000/token
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+    });
+
+    it('should pass validation for auth type none', async () => {
+      // Arrange
+      const filePath = join(testDir, 'auth-none.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  auth:
+    type: none
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+    });
+  });
+
+  describe('Headers Validation', () => {
+    it('should fail when headers is not an object (string)', async () => {
+      // Arrange
+      const filePath = join(testDir, 'headers-string.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  headers: "invalid-string"
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Field "server.headers" must be an object')
+      );
+    });
+
+    it('should fail when headers is an array', async () => {
+      // Arrange
+      const filePath = join(testDir, 'headers-array.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  headers:
+    - Content-Type: application/json
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Field "server.headers" must be an object')
+      );
+    });
+
+    it('should pass validation for valid headers object', async () => {
+      // Arrange
+      const filePath = join(testDir, 'valid-headers.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords: [a, b, c]
+server:
+  transport: http
+  url: http://localhost:3000
+  headers:
+    Content-Type: application/json
+    X-Custom-Header: custom-value
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+    });
+  });
+
+  describe('Keyword Count Edge Cases', () => {
+    it('should fail when keywords has exactly 2 items (boundary)', async () => {
+      // Arrange
+      const filePath = join(testDir, 'exactly-two-keywords.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords: [a, b]
+server:
+  transport: stdio
+  command: echo
+`
+      );
+
+      // Act & Assert
+      await expect(async () => {
+        await validateCommand(filePath);
+      }).rejects.toThrow('Process.exit called with code 1');
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Field "keywords" must have at least 3 items')
+      );
+    });
+
+    it('should warn when keywords has exactly 21 items (boundary)', async () => {
+      // Arrange
+      const keywords21 = Array.from({ length: 21 }, (_, i) => `keyword${i + 1}`);
+      const filePath = join(testDir, 'exactly-21-keywords.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+keywords:
+${keywords21.map((k) => `  - ${k}`).join('\n')}
+server:
+  transport: stdio
+  command: echo
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Field "keywords" has more than 20 items')
+      );
+    });
+
+    it('should pass when keywords has exactly 20 items (boundary)', async () => {
+      // Arrange
+      const keywords20 = Array.from({ length: 20 }, (_, i) => `keyword${i + 1}`);
+      const filePath = join(testDir, 'exactly-20-keywords.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords:
+${keywords20.map((k) => `  - ${k}`).join('\n')}
+server:
+  transport: stdio
+  command: echo
+  args: []
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
+    });
+
+    it('should pass when keywords has exactly 3 items (boundary)', async () => {
+      // Arrange
+      const filePath = join(testDir, 'exactly-3-keywords.spell.yaml');
+      writeFileSync(
+        filePath,
+        `name: test
+version: 1.0.0
+description: Test
+keywords: [a, b, c]
+server:
+  transport: stdio
+  command: echo
+  args: []
+`
+      );
+
+      // Act
+      await validateCommand(filePath);
+
+      // Assert
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Passed'));
+    });
+  });
 });
