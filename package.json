@@ -36,8 +36,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "test:containers": "vitest run tests/cross-platform/container.test.ts --testTimeout=600000",
-    "test:containers:watch": "vitest tests/cross-platform/container.test.ts --testTimeout=600000",
+    "test:containers": "vitest run --config vitest.container.config.ts",
+    "test:containers:watch": "vitest --config vitest.container.config.ts",
     "clean": "rm -rf dist coverage html",
     "clean:all": "rm -rf dist coverage node_modules pnpm-lock.yaml",
     "prepublishOnly": "pnpm run clean:all && pnpm install --frozen-lockfile && pnpm run type-check && pnpm run lint && pnpm run test && pnpm run build"

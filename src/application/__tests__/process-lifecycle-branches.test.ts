@@ -13,6 +13,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ProcessLifecycleManager } from '../process-lifecycle';
 import { EmbeddingStorage } from '../../infrastructure/embedding-storage';
 import type { StdioServerConfig } from '../../core/types';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 describe('ProcessLifecycleManager Branch Coverage', () => {
   let lifecycle: ProcessLifecycleManager;
@@ -234,12 +236,15 @@ describe('ProcessLifecycleManager Branch Coverage', () => {
      * Coverage: No saved state branch
      */
     it('should handle loadFromStorage with no saved state', async () => {
-      const emptyStorage = new EmbeddingStorage();
+      // Arrange: Create isolated storage with unique temp file
+      const uniqueTempFile = join(tmpdir(), `test-empty-${Date.now()}.msgpack`);
+      const emptyStorage = new EmbeddingStorage(uniqueTempFile);
       const newLifecycle = new ProcessLifecycleManager(emptyStorage);
 
+      // Act
       await expect(newLifecycle.loadFromStorage()).resolves.not.toThrow();
 
-      // Should start fresh
+      // Assert: Should start fresh with no saved state
       expect(newLifecycle.getCurrentTurn()).toBe(0);
       expect(newLifecycle.getActiveSpellNames()).toEqual([]);
     });
