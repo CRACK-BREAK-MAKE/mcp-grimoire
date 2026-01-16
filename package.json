@@ -47,7 +47,7 @@
       "secretlint",
       "prettier --write"
     ],
-    "src/**/*.ts": [
+    "src/**/!(*.test|*.spec).ts": [
       "eslint --fix --max-warnings 0"
     ],
     "*.{js,json,yaml,yml,md}": [

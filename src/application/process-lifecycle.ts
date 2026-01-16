@@ -7,6 +7,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { SpellConfig } from '../core/types';
 import type { ActiveSpell, Tool, SSEServerConfig, HTTPServerConfig } from '../core/types';
 import { logger } from '../utils/logger';
+import { normalizeCommand } from '../utils/cross-platform';
 import type { EmbeddingStorage } from '../infrastructure/embedding-storage';
 import { buildAuthHeaders, createAuthProvider } from '../infrastructure/auth-provider.js';
 
@@ -366,17 +367,22 @@ export class ProcessLifecycleManager {
           throw new ProcessSpawnError('Stdio transport requires command and args', name);
         }
 
+        const serverConfig = config.server;
+
+        // Normalize command for cross-platform compatibility (Windows needs .cmd for npm binaries)
+        const normalizedCommand = normalizeCommand(serverConfig.command);
+
         logger.info('SPAWN', 'Spawning stdio MCP server', {
           spellName: name,
-          command: config.server.command,
+          command: normalizedCommand,
+          originalCommand: serverConfig.command,
+          platform: process.platform,
         });
-
-        const serverConfig = config.server;
 
         // StdioClientTransport will spawn the process itself
         // We don't need to spawn manually
         mcpTransport = new StdioClientTransport({
-          command: serverConfig.command,
+          command: normalizedCommand,
           args: serverConfig.args as string[],
           env: serverConfig.env as Record<string, string> | undefined,
         });
