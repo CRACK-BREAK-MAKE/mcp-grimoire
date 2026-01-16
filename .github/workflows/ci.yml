@@ -133,8 +133,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Clean build
-        run: pnpm run clean:all
+      - name: Clean build directory
+        run: pnpm run clean
 
       - name: Build project
         run: pnpm run build
