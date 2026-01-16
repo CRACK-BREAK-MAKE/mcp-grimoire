@@ -242,33 +242,33 @@ describe('Gateway Error Paths', () => {
 
   describe('getAllTools() edge cases', () => {
     /**
-     * Test 7: Returns resolve_intent and activate_spell with no active spells
-     * Coverage: Lines 524-569 (base tools only)
+     * Test 7: Returns only resolve_intent when no spells are loaded
+     * Coverage: Lines 547-567 (base tools only, conditional activate_spell)
      */
-    it('should return base tools when no spells active', () => {
+    it('should return only resolve_intent when no spells are loaded', () => {
       const gateway = new GrimoireServer();
 
       const tools = gateway.getAvailableTools();
 
-      expect(tools.length).toBeGreaterThanOrEqual(2);
+      // With no spells: only resolve_intent (activate_spell hidden to avoid invalid schema)
+      expect(tools.length).toBe(1);
       expect(tools.find((t) => t.name === 'resolve_intent')).toBeDefined();
-      expect(tools.find((t) => t.name === 'activate_spell')).toBeDefined();
+      expect(tools.find((t) => t.name === 'activate_spell')).toBeUndefined();
     });
 
     /**
-     * Test 8: activate_spell enum contains available spell names
-     * Coverage: Lines 551-557 (enum population)
+     * Test 8: activate_spell only appears when spells are available
+     * Coverage: Lines 571-588 (conditional activate_spell inclusion)
      */
-    it('should populate activate_spell enum with available spells', () => {
+    it('should only include activate_spell when spells are available', () => {
       const gateway = new GrimoireServer();
 
       const tools = gateway.getAvailableTools();
       const activateSpellTool = tools.find((t) => t.name === 'activate_spell');
 
-      expect(activateSpellTool).toBeDefined();
-      expect(activateSpellTool?.inputSchema).toBeDefined();
-      // Enum should be an array (even if empty)
-      expect(Array.isArray(activateSpellTool?.inputSchema.properties?.name?.enum)).toBe(true);
+      // With no spells loaded, activate_spell should NOT be present
+      // This prevents invalid JSON schema with empty enum arrays
+      expect(activateSpellTool).toBeUndefined();
     });
   });
 
@@ -365,8 +365,9 @@ describe('Gateway Error Paths', () => {
       // but we can test scenarios that exercise it
       const tools = gateway.getAvailableTools();
 
-      // With no spells, should still have base tools
-      expect(tools.length).toBeGreaterThanOrEqual(2);
+      // With no spells, should have only resolve_intent (not activate_spell)
+      expect(tools.length).toBeGreaterThanOrEqual(1);
+      expect(tools.find((t) => t.name === 'resolve_intent')).toBeDefined();
     });
   });
 

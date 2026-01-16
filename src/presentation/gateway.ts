@@ -564,7 +564,12 @@ export class GrimoireServer {
           required: ['query'],
         },
       },
-      {
+    ];
+
+    // Only include activate_spell if there are spells available
+    // Empty enum arrays are invalid JSON schema
+    if (availableSpellNames.length > 0) {
+      tools.push({
         name: 'activate_spell',
         description:
           'ONLY use this tool when resolve_intent returns status="multiple_matches" and asks you to choose between alternatives. Never use this as your first action - always call resolve_intent first.',
@@ -579,8 +584,8 @@ export class GrimoireServer {
           },
           required: ['name'],
         },
-      },
-    ];
+      });
+    }
 
     // Add tools from all active spells
     const activeSpellNames = this.router.getActiveSpellNames();

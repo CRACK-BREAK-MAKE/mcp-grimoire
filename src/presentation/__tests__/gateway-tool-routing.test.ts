@@ -336,7 +336,7 @@ describe('Gateway Tool Routing and Error Handling', () => {
       const tools = gateway.getAvailableTools();
 
       expect(Array.isArray(tools)).toBe(true);
-      expect(tools.length).toBeGreaterThanOrEqual(2); // At least resolve_intent and activate_spell
+      expect(tools.length).toBeGreaterThanOrEqual(1); // At least resolve_intent
 
       // Check resolve_intent exists
       const resolveIntent = tools.find((t) => t.name === 'resolve_intent');
@@ -346,13 +346,8 @@ describe('Gateway Tool Routing and Error Handling', () => {
       expect(resolveIntent?.inputSchema.type).toBe('object');
       expect(resolveIntent?.inputSchema.properties).toBeDefined();
 
-      // Check activate_spell exists
-      const activateSpell = tools.find((t) => t.name === 'activate_spell');
-      expect(activateSpell).toBeDefined();
-      expect(activateSpell?.description).toBeTruthy();
-      expect(activateSpell?.inputSchema).toBeDefined();
-      expect(activateSpell?.inputSchema.type).toBe('object');
-      expect(activateSpell?.inputSchema.properties).toBeDefined();
+      // Note: activate_spell only exists when there are spells loaded
+      // With no spells loaded, it's not present to avoid invalid empty enum schema
     });
 
     /**
