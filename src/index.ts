@@ -19,20 +19,23 @@ import { GrimoireServer } from './presentation/gateway';
  * Detect if we should run in MCP server mode or CLI mode
  */
 function shouldRunAsMCPServer(): boolean {
-  // If process.stdin is not a TTY, we're being called from MCP (stdio transport)
-  // This happens when Claude Desktop spawns us with stdio pipes
-  if (!process.stdin.isTTY) {
-    return true;
-  }
+  // Strategy: Check args FIRST, then TTY
+  // This matches the recommended dual-mode pattern for MCP servers
 
-  // If we have command-line arguments (other than node and script name), run CLI
+  // STEP 1: If we have command-line arguments → CLI mode
   const args = process.argv.slice(2);
   if (args.length > 0) {
-    // Any argument at all means CLI mode (help, version, commands, etc.)
-    return false;
+    return false; // CLI mode (e.g., --help, create, list)
   }
 
-  // Default to MCP server mode (no args + TTY = MCP)
+  // STEP 2: No arguments - check if running in terminal vs piped
+  // - If TTY (terminal): User ran `npx mcp-grimoire` with no args → Show CLI help
+  // - If NOT TTY (piped): MCP client is connecting via stdio → Start MCP server
+  if (process.stdin.isTTY) {
+    return false; // Terminal → Show CLI help instead of hanging
+  }
+
+  // STEP 3: Default to MCP server (stdin is piped from MCP client)
   return true;
 }
 
@@ -62,7 +65,18 @@ async function runCLI(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (shouldRunAsMCPServer()) {
+  const isMCPMode = shouldRunAsMCPServer();
+
+  // Debug output
+  if (process.env.GRIMOIRE_DEBUG === 'true') {
+    console.error('[DEBUG] Mode detection:', {
+      isTTY: process.stdin.isTTY ?? 'undefined',
+      args: process.argv.slice(2),
+      runAsMCPServer: isMCPMode,
+    });
+  }
+
+  if (isMCPMode) {
     await runMCPServer();
   } else {
     await runCLI();
