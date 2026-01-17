@@ -76,6 +76,7 @@ Add to your `claude_desktop_config.json`:
 
 ```bash
 # Create a new spell (interactive wizard)
+# Note: Arguments trigger CLI mode via dual-mode detection
 npx @crack-break-make/mcp-grimoire create
 
 # List installed spells
@@ -87,9 +88,9 @@ npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
 
 **Key Point**:
 
-- 🖥️ **MCP Server** runs inside Claude Desktop (configured via mcp.json)
-- 💻 **CLI Commands** run in your terminal (to create/manage spells)
-- Same package, two modes - automatically detected!
+- 🖥️ **MCP Server** runs inside Claude Desktop (configured via mcp.json with `-y` flag)
+- 💻 **CLI Commands** run in your terminal with command arguments (create, list, etc.)
+- Same package, two modes - automatically detected based on stdin and arguments!
 
 ### 3. Use in Claude
 
@@ -107,15 +108,15 @@ Grimoire will automatically activate the right MCP server based on your query!
 
 MCP Grimoire intelligently detects how it's being called:
 
-| Mode           | How It's Called                  | Purpose                           | Example                                |
-| -------------- | -------------------------------- | --------------------------------- | -------------------------------------- |
-| **MCP Server** | From `mcp.json` with stdio pipes | Runs as MCP gateway for AI agents | Claude Desktop spawns it automatically |
-| **CLI Tool**   | From terminal with arguments     | Manage spell configurations       | `npx mcp-grimoire create`              |
+| Mode           | How It's Called                  | Purpose                           | Example                                     |
+| -------------- | -------------------------------- | --------------------------------- | ------------------------------------------- |
+| **MCP Server** | From `mcp.json` with stdio pipes | Runs as MCP gateway for AI agents | Claude Desktop spawns it automatically      |
+| **CLI Tool**   | From terminal with arguments     | Manage spell configurations       | `npx @crack-break-make/mcp-grimoire create` |
 
-**You only install once** - the entry point detects the mode automatically:
+**You only install once** - the entry point (dist/index.js) detects the mode automatically:
 
-- stdin is not a TTY (piped) → MCP Server mode
-- stdin is a TTY + CLI args → CLI mode
+- stdin is not a TTY (piped from MCP client) → MCP Server mode
+- stdin is a TTY + CLI arguments present → CLI mode
 
 ### GitHub Copilot (VS Code)
 
@@ -195,6 +196,11 @@ A "spell" is a YAML configuration file that tells Grimoire how to spawn and use 
 ### Interactive Creation (Recommended)
 
 ```bash
+# Run without installation (recommended)
+npx @crack-break-make/mcp-grimoire create
+
+# OR install globally first, then use short command
+npm install -g @crack-break-make/mcp-grimoire
 grimoire create
 ```
 
@@ -209,7 +215,7 @@ The wizard will guide you through:
 **With server probing** (auto-generates steering and keywords):
 
 ```bash
-grimoire create --probe
+npx @crack-break-make/mcp-grimoire create --probe
 ```
 
 ### Manual Creation
@@ -592,10 +598,6 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for comprehensive development guideline
 # Run all tests
 pnpm test
 
-# Run specific test suite
-pnpm test:unit
-pnpm test:integration
-
 # Run with coverage
 pnpm test:coverage
 ```
@@ -702,7 +704,7 @@ We maintain high code quality through:
 
 - 💬 [Join Discussions](https://github.com/crack-break-make/mcp-grimoire/discussions)
 - 🐛 [Report Issues](https://github.com/crack-break-make/mcp-grimoire/issues)
-- 📧 Email: [Mohan Sharma](mailto:mohan.sharma@sap.com)
+- 📧 Email: [Mohan Sharma](mailto:crack.break.make@gmail.com)
 
 ---
 
@@ -713,13 +715,12 @@ We maintain high code quality through:
 - [Architecture Decision Records](./docs/adr/README.md)
 - [Intent Resolution Strategy](./docs/intent-resolution-solution.md)
 - [Turn-Based Lifecycle](./docs/turn-based-lifecycle-explained.md)
-- [Testing & Validation Plan](./docs/testing-validation-plan.md)
 
 ---
 
 ## 📝 License
 
-ISC © [Mohan Sharma](https://github.com/mohan-sharma-au7)
+ISC © [Mohan Sharma](https://github.com/crack-break-make)
 
 ---
 
@@ -732,6 +733,6 @@ ISC © [Mohan Sharma](https://github.com/mohan-sharma-au7)
 
 ---
 
-**Made with ❤️ by [Mohan Sharma](https://github.com/mohan-sharma-au7)**
+**Made with ❤️ by [Mohan Sharma](https://github.com/crack-break-make)**
 
 _Special thanks to the MCP community and all contributors!_
