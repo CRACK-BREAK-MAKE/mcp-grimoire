@@ -21,7 +21,7 @@ describe('Dual-Mode Package', () => {
   describe('CLI Mode (grimoire binary)', () => {
     it('should show version', () => {
       const result = execSync('node dist/cli.js --version', { encoding: 'utf-8' });
-      expect(result.trim()).toMatch(/^\d+\.\d+\.\d+(-beta\.\d+)?$/);
+      expect(result.trim()).toMatch(/^\d+\.\d+\.\d+(-beta\.\d+|-rc\.\d+)?$/);
     });
 
     it('should show help', () => {
