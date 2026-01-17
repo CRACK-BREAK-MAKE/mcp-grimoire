@@ -197,8 +197,11 @@ export class GrimoireServer {
         // Calculate token savings
         const tokenSavings = this.calculateTokenSavings(enhancedTools.length, totalSpells);
 
-        // Increment turn counter (ADR-0006)
+        // Increment turn counter FIRST (ADR-0006)
         this.lifecycle.incrementTurn();
+
+        // Mark spell as used with current turn number
+        this.lifecycle.markUsed(topResult.spellName);
 
         // Run cleanup check (ADR-0006: 5-turn inactivity threshold)
         const killedSpells = await this.lifecycle.cleanupInactive(5);
@@ -356,8 +359,11 @@ export class GrimoireServer {
     // Register tools
     this.router.registerTools(name, enhancedTools);
 
-    // Increment turn counter (ADR-0006)
+    // Increment turn counter FIRST (ADR-0006)
     this.lifecycle.incrementTurn();
+
+    // Mark spell as used with current turn number
+    this.lifecycle.markUsed(name);
 
     // Run cleanup check (ADR-0006: 5-turn inactivity threshold)
     const killedSpells = await this.lifecycle.cleanupInactive(5);
@@ -473,11 +479,11 @@ export class GrimoireServer {
         arguments: args as Record<string, unknown>,
       });
 
-      // Mark spell as used (for turn-based cleanup)
-      this.lifecycle.markUsed(spellName);
-
-      // Increment turn counter (ADR-0006)
+      // Increment turn counter FIRST (ADR-0006)
       this.lifecycle.incrementTurn();
+
+      // Mark spell as used with current turn number (for turn-based cleanup)
+      this.lifecycle.markUsed(spellName);
 
       // Run cleanup check (ADR-0006: 5-turn inactivity threshold)
       const killedSpells = await this.lifecycle.cleanupInactive(5);
@@ -758,6 +764,10 @@ export class GrimoireServer {
   /**
    * Notify client that tools list has changed
    * Called after spawning/killing spells or when files change
+   *
+   * NOTE: AI Agents may cache tools aggressively. The MCP spec says clients
+   * should re-query tools/list after receiving this notification, but some clients
+   * may not implement this correctly. We send the correct notification per spec.
    */
   private notifyToolsChanged(): void {
     const currentTools = this.getAllTools();
@@ -766,6 +776,10 @@ export class GrimoireServer {
       toolNames: currentTools.map((t) => t.name),
       activeSpells: this.router.getActiveSpellNames(),
     });
+
+    // Send notification per MCP spec
+    // The method should be 'notifications/tools/list_changed'
+    // Clients should then call tools/list to get the updated list
     void this.server.notification({
       method: 'notifications/tools/list_changed',
       params: {},

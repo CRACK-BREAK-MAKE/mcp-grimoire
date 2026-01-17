@@ -182,7 +182,12 @@ export class ProcessLifecycleManager {
     for (const name of this.activeSpells.keys()) {
       const usage = this.usageTracking.get(name);
       if (!usage) {
-        // Never used, consider inactive
+        // No usage tracking means spell was just spawned or there's a bug
+        // Skip it - it should have been marked as used when spawned
+        logger.warn('LIFECYCLE', 'Active spell has no usage tracking, skipping cleanup', {
+          spellName: name,
+          turn: this.currentTurn,
+        });
         continue;
       }
 
