@@ -708,6 +708,28 @@ We maintain high code quality through:
 
 ---
 
+## ❓ FAQ & Troubleshooting
+
+### AI Agent Not Showing `resolve_intent` Tool
+
+**Problem**: GitHub Copilot (VS Code) or other AI agents cache tools aggressively. After Grimoire spawns and registers new tools, the AI agent may not see them immediately, including the critical `resolve_intent` tool.
+
+**Solution**: Explicitly prompt the AI agent to refresh its tool list:
+
+```
+Please call the tools/list API to refresh available tools, then use the resolve_intent tool to search for [your query].
+```
+
+**Why this happens**:
+
+- MCP clients cache tool lists for performance
+- The `tools/list_changed` notification may not trigger immediate refresh in all clients
+- This is a known limitation of some MCP client implementations (not a Grimoire bug)
+
+**Alternative approach**: Restart the AI agent (e.g., reload VS Code window) to force tool cache refresh.
+
+---
+
 ## 📖 Documentation
 
 - [Architecture Overview](./docs/architecture.md)
