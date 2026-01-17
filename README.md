@@ -106,17 +106,22 @@ Grimoire will automatically activate the right MCP server based on your query!
 
 ## 🎭 Dual-Mode Operation
 
-MCP Grimoire intelligently detects how it's being called:
+MCP Grimoire intelligently detects how it's being called using a **3-step detection strategy**:
 
 | Mode           | How It's Called                  | Purpose                           | Example                                     |
 | -------------- | -------------------------------- | --------------------------------- | ------------------------------------------- |
 | **MCP Server** | From `mcp.json` with stdio pipes | Runs as MCP gateway for AI agents | Claude Desktop spawns it automatically      |
 | **CLI Tool**   | From terminal with arguments     | Manage spell configurations       | `npx @crack-break-make/mcp-grimoire create` |
 
-**You only install once** - the entry point (dist/index.js) detects the mode automatically:
+**You only install once** - the entry point (`dist/index.js`) detects the mode automatically:
 
-- stdin is not a TTY (piped from MCP client) → MCP Server mode
-- stdin is a TTY + CLI arguments present → CLI mode
+### Detection Logic (matches MCP best practices)
+
+1. **Args First**: If CLI arguments provided (e.g., `--help`, `create`) → **CLI Mode**
+2. **TTY Check**: If no args but running in terminal (TTY) → **CLI Mode** (shows help)
+3. **Default**: If stdin is piped from MCP client → **MCP Server Mode**
+
+This prevents the server from hanging if you accidentally run `npx mcp-grimoire` with no arguments.
 
 ### GitHub Copilot (VS Code)
 
