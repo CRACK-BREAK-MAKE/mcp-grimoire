@@ -1,4 +1,6 @@
-# 📚 MCP Grimoire
+<div align="center">
+  <img src="logo.png" alt="MCP Grimoire Logo" width="100%"/>
+</div>
 
 **Your intelligent spellbook for MCP servers** - Lazy loading orchestration with 97% token savings
 
@@ -311,7 +313,7 @@ Examples:
 - `@modelcontextprotocol/server-github`
 - `@cap-js/mcp-server`
 
-### 🚧 SSE (Planned)
+### ✅ SSE (Fully Supported)
 
 For real-time MCP servers using Server-Sent Events:
 
@@ -321,7 +323,7 @@ server:
   url: http://localhost:3000/sse
 ```
 
-### 🚧 HTTP (Planned)
+### ✅ HTTP (Fully Supported)
 
 For REST-like MCP servers:
 
