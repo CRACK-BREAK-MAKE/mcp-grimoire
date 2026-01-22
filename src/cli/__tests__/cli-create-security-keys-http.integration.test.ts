@@ -61,7 +61,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -98,8 +98,7 @@ describe('CLI create - Security Keys HTTP', () => {
 
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'security_keys_http_server');
-
-    console.log(`\n[TEST] Spell files kept for verification in: ${grimoireDir}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   }, 30000);
 
   it('should create spell with GitHub token header (simulating GitHub MCP)', async () => {

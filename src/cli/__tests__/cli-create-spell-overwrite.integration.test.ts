@@ -79,7 +79,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm, readFile } from 'fs/promises';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand } from '../commands/create';
 import {
   startFastMCPServer,
@@ -116,9 +116,7 @@ describe('CLI create - Spell Overwrite Behavior', () => {
 
   afterAll(async () => {
     await stopServer(httpServerProcess, HTTP_PORT, 'basic_auth_http_server');
-
-    // Keep spell files for manual verification - no cleanup
-    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   }, 30000);
 
   it('should completely overwrite existing spell with new transport and config', async () => {

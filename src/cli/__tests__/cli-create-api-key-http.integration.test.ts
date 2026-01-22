@@ -39,7 +39,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -83,9 +83,7 @@ describe('CLI create - API Key HTTP', () => {
 
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'api_key_http_server');
-
-    // Keep spell files for manual verification - no cleanup
-    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   }, 30000);
 
   it('should create spell with API Key and validate all fields', async () => {

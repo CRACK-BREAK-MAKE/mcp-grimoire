@@ -70,7 +70,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   readSpellFile,
   readEnvFile,
@@ -101,8 +101,7 @@ describe('CLI create - stdio UI5 with env', () => {
   });
 
   afterAll(async () => {
-    // Keep spell files for manual verification - no cleanup
-    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   });
 
   it('should create spell for stdio with environment variables', async () => {

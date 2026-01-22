@@ -55,12 +55,12 @@
  * REAL NETWORK - Tests actual failure scenarios
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand, type CreateOptions } from '../commands/create';
 import { probeMCPServer } from '../utils/mcp-probe';
 import { startFastMCPServer, stopServer, FASTMCP_PORTS } from './helpers/test-server-manager';
@@ -72,6 +72,10 @@ describe('CLI create - Network Failures', () => {
     grimoireDir = await setupTestGrimoireDir('network-failures');
     const { ensureDirectories } = await import('../../utils/paths');
     await ensureDirectories();
+  });
+
+  afterAll(async () => {
+    await cleanupTestGrimoireDir(grimoireDir);
   });
 
   it('should handle DNS resolution failure', async () => {

@@ -48,7 +48,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand } from '../commands/create';
 import { startFastMCPServer, stopServer, FASTMCP_PORTS } from './helpers/test-server-manager';
 
@@ -69,9 +69,7 @@ describe('CLI create - Credential Leak Prevention', () => {
 
   afterAll(async () => {
     await stopServer(httpServerProcess, HTTP_PORT, 'basic_auth_http_server');
-
-    // Keep spell files for manual verification - no cleanup
-    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   }, 30000);
 
   it('should never log literal credentials to console during successful creation', async () => {

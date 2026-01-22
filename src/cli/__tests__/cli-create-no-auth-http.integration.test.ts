@@ -74,13 +74,7 @@ describe('CLI create - No Auth HTTP', () => {
 
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'no_auth_http_server');
-
-    // Keep spell files for manual verification - no cleanup
-    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
-    // if (existsSync(spellFilePath)) {
-    //   await rm(spellFilePath);
-    // }
-    console.log(`\n[TEST] Spell file kept for verification: ${spellFilePath}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   }, 30000);
 
   it('should create spell without any authentication and validate all fields', async () => {

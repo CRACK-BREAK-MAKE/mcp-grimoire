@@ -65,7 +65,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
-import { setupTestGrimoireDir } from './helpers/test-path-manager';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand } from '../commands/create';
 import {
   startFastMCPServer,
@@ -103,9 +103,7 @@ describe('CLI create - Probe Failure Handling', () => {
 
   afterAll(async () => {
     await stopServer(basicAuthServerProcess, BASIC_AUTH_PORT, 'basic_auth_http_server');
-
-    // Keep spell files for manual verification - no cleanup
-    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+    await cleanupTestGrimoireDir(grimoireDir);
   }, 30000);
 
   it('should NOT create spell file when server is unreachable (connection refused)', async () => {
