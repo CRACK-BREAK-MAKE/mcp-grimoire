@@ -4,10 +4,11 @@
  *
  * See ADR-0012 for Bearer token authentication strategy
  * See ADR-0013 for environment variable expansion
+ * See ADR-0014 for OAuth Client Credentials
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { buildAuthHeaders, expandEnvVar } from '../auth-provider';
+import { buildAuthHeaders, expandEnvVar, createAuthProvider } from '../auth-provider';
 import type { AuthConfig } from '../../core/types';
 
 describe('buildAuthHeaders', () => {
@@ -95,6 +96,198 @@ describe('buildAuthHeaders', () => {
     expect(headers).toEqual({
       Authorization: 'Bearer ',
     });
+  });
+
+  it('should handle Basic Auth username and password', () => {
+    const auth: AuthConfig = {
+      type: 'basic',
+      username: 'testuser',
+      password: 'testpass',
+    };
+    const headers = buildAuthHeaders(undefined, auth);
+    const expectedBase64 = Buffer.from('testuser:testpass').toString('base64');
+    // Basic Auth uses Bearer prefix for FastMCP compatibility
+    expect(headers).toEqual({
+      Authorization: `Bearer ${expectedBase64}`,
+    });
+  });
+
+  it('should expand env vars in Basic Auth', () => {
+    process.env.TEST_USERNAME = 'envuser';
+    process.env.TEST_PASSWORD = 'envpass';
+    const auth: AuthConfig = {
+      type: 'basic',
+      username: '${TEST_USERNAME}',
+      password: '${TEST_PASSWORD}',
+    };
+    const headers = buildAuthHeaders(undefined, auth);
+    const expectedBase64 = Buffer.from('envuser:envpass').toString('base64');
+    // Basic Auth uses Bearer prefix for FastMCP compatibility
+    expect(headers).toEqual({
+      Authorization: `Bearer ${expectedBase64}`,
+    });
+    delete process.env.TEST_USERNAME;
+    delete process.env.TEST_PASSWORD;
+  });
+
+  it('should handle undefined environment variable in password', () => {
+    const auth: AuthConfig = {
+      type: 'basic',
+      username: 'user',
+      password: '${UNDEFINED_PASSWORD}',
+    };
+    const headers = buildAuthHeaders(undefined, auth);
+    // Should not add auth header when password expands to empty
+    expect(headers).toEqual({});
+  });
+});
+
+describe('createAuthProvider', () => {
+  beforeEach(() => {
+    delete process.env.TEST_CLIENT_ID;
+    delete process.env.TEST_CLIENT_SECRET;
+    delete process.env.TEST_PRIVATE_KEY;
+    delete process.env.TEST_JWT_ASSERTION;
+  });
+
+  afterEach(() => {
+    delete process.env.TEST_CLIENT_ID;
+    delete process.env.TEST_CLIENT_SECRET;
+    delete process.env.TEST_PRIVATE_KEY;
+    delete process.env.TEST_JWT_ASSERTION;
+  });
+
+  it('should return undefined for bearer auth', () => {
+    const auth: AuthConfig = {
+      type: 'bearer',
+      token: 'test-token',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeUndefined();
+  });
+
+  it('should return undefined for basic auth', () => {
+    const auth: AuthConfig = {
+      type: 'basic',
+      username: 'user',
+      password: 'pass',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeUndefined();
+  });
+
+  it('should create ClientCredentialsProvider for client_credentials', () => {
+    const auth: AuthConfig = {
+      type: 'client_credentials',
+      clientId: 'test-client',
+      clientSecret: 'test-secret',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+    expect(provider?.clientMetadata).toBeDefined();
+  });
+
+  it('should expand env vars in client_credentials', () => {
+    process.env.TEST_CLIENT_ID = 'env-client-id';
+    process.env.TEST_CLIENT_SECRET = 'env-secret';
+    const auth: AuthConfig = {
+      type: 'client_credentials',
+      clientId: '${TEST_CLIENT_ID}',
+      clientSecret: '${TEST_CLIENT_SECRET}',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+    expect(provider?.clientInformation()?.client_id).toBe('env-client-id');
+  });
+
+  it('should create PrivateKeyJwtProvider for private_key_jwt', () => {
+    const auth: AuthConfig = {
+      type: 'private_key_jwt',
+      clientId: 'test-client',
+      privateKey: '-----BEGIN PRIVATE KEY-----\\ntest\\n-----END PRIVATE KEY-----',
+      algorithm: 'RS256',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+    expect(provider?.clientMetadata).toBeDefined();
+  });
+
+  it('should expand env vars in private_key_jwt', () => {
+    process.env.TEST_CLIENT_ID = 'jwt-client-id';
+    process.env.TEST_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----\\ntest\\n-----END PRIVATE KEY-----';
+    const auth: AuthConfig = {
+      type: 'private_key_jwt',
+      clientId: '${TEST_CLIENT_ID}',
+      privateKey: '${TEST_PRIVATE_KEY}',
+      algorithm: 'RS256',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+    expect(provider?.clientInformation()?.client_id).toBe('jwt-client-id');
+  });
+
+  it('should use default algorithm RS256 for private_key_jwt', () => {
+    const auth: AuthConfig = {
+      type: 'private_key_jwt',
+      clientId: 'test-client',
+      privateKey: '-----BEGIN PRIVATE KEY-----\\ntest\\n-----END PRIVATE KEY-----',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+  });
+
+  it('should create StaticPrivateKeyJwtProvider for static_private_key_jwt', () => {
+    const auth: AuthConfig = {
+      type: 'static_private_key_jwt',
+      clientId: 'test-client',
+      jwtBearerAssertion: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test.signature',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+    expect(provider?.clientMetadata).toBeDefined();
+  });
+
+  it('should expand env vars in static_private_key_jwt', () => {
+    process.env.TEST_CLIENT_ID = 'static-client-id';
+    process.env.TEST_JWT_ASSERTION = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test.signature';
+    const auth: AuthConfig = {
+      type: 'static_private_key_jwt',
+      clientId: '${TEST_CLIENT_ID}',
+      jwtBearerAssertion: '${TEST_JWT_ASSERTION}',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeDefined();
+    expect(provider?.clientInformation()?.client_id).toBe('static-client-id');
+  });
+
+  it('should return undefined for missing client_credentials config', () => {
+    const auth: AuthConfig = {
+      type: 'client_credentials',
+      clientId: '',
+      clientSecret: 'secret',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeUndefined();
+  });
+
+  it('should return undefined for missing private_key_jwt config', () => {
+    const auth: AuthConfig = {
+      type: 'private_key_jwt',
+      clientId: 'client',
+      privateKey: '',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeUndefined();
+  });
+
+  it('should return undefined for missing static_private_key_jwt config', () => {
+    const auth: AuthConfig = {
+      type: 'static_private_key_jwt',
+      clientId: 'client',
+      jwtBearerAssertion: '',
+    };
+    const provider = createAuthProvider(auth);
+    expect(provider).toBeUndefined();
   });
 });
 

@@ -39,7 +39,7 @@ class SecurityKeysAuthMiddleware(Middleware):
         headers = get_http_headers()
         
         if headers:
-            logger.debug("=" * 50)
+            logger.debug("=====================================================")
             logger.debug(f"Request: {context.method}")
             logger.debug("HTTP Headers:")
             
@@ -58,7 +58,7 @@ class SecurityKeysAuthMiddleware(Middleware):
             
             logger.debug(f"GitHub token valid: {github_valid}")
             logger.debug(f"Brave key valid: {brave_valid}")
-            logger.debug("=" * 50)
+            logger.debug("=====================================================")
             
             # Accept if EITHER key is valid (simulates different MCP servers)
             if not (github_valid or brave_valid):

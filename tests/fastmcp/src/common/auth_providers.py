@@ -18,6 +18,7 @@ class BasicAuthTokenVerifier(DebugTokenVerifier):
     """Token verifier for HTTP Basic Authentication.
 
     Validates credentials in the format 'Basic <base64(username:password)>'.
+    Supports multiple valid credential pairs.
     """
 
     def __init__(
@@ -26,6 +27,7 @@ class BasicAuthTokenVerifier(DebugTokenVerifier):
         password: str,
         client_id: str = "basic-auth-client",
         scopes: list[str] | None = None,
+        additional_credentials: list[tuple[str, str]] | None = None,
     ) -> None:
         """Initialize the basic auth verifier.
 
@@ -34,9 +36,17 @@ class BasicAuthTokenVerifier(DebugTokenVerifier):
             password: Expected password (will be hashed)
             client_id: Client identifier for auth context
             scopes: List of scopes granted to authenticated users
+            additional_credentials: Optional list of (username, password) tuples for additional valid credentials
         """
-        self.username = username
-        self.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+        # Store multiple credential pairs
+        self.valid_credentials = {
+            username: bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+        }
+        
+        # Add any additional credential pairs
+        if additional_credentials:
+            for user, pwd in additional_credentials:
+                self.valid_credentials[user] = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt())
 
         # Create validation function that checks basic auth format
         # Note: FastMCP's BearerAuthBackend strips "Bearer " prefix before passing token
@@ -51,10 +61,9 @@ class BasicAuthTokenVerifier(DebugTokenVerifier):
             Returns:
                 True if credentials are valid
             """
-            logger.debug("=" * 50)
+            logger.debug("=====================================================")
             logger.debug("Basic Auth validation called")
             logger.debug(f"Received token length: {len(token)}")
-            logger.debug(f"Expected username: {self.username}")
             
             try:
                 # Decode base64 credentials
@@ -62,21 +71,23 @@ class BasicAuthTokenVerifier(DebugTokenVerifier):
                 provided_username, provided_password = credentials.split(":", 1)
                 logger.debug(f"Provided username: {provided_username}")
 
-                # Verify username and password
-                if provided_username != self.username:
-                    logger.warning("Username mismatch")
+                # Check if username exists in valid credentials
+                if provided_username not in self.valid_credentials:
+                    logger.warning(f"Unknown username: {provided_username}")
                     return False
 
+                # Verify password for this username
+                password_hash = self.valid_credentials[provided_username]
                 password_match = bcrypt.checkpw(
                     provided_password.encode(),
-                    self.password_hash,
+                    password_hash,
                 )
                 logger.debug(f"Password match: {password_match}")
-                logger.debug("=" * 50)
+                logger.debug("=====================================================")
                 return password_match
             except Exception as e:
                 logger.error(f"Validation error: {e}")
-                logger.debug("=" * 50)
+                logger.debug("=====================================================")
                 return False
 
         super().__init__(

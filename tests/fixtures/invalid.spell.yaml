@@ -1,6 +1,3 @@
-name: invalid
-keywords:
-  - only
-  - two
-server:
-  command: echo
+# Invalid spell configuration for testing error handling
+name: invalid-spell
+# Missing required fields: version, description, keywords, server

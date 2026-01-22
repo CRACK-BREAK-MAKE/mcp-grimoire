@@ -43,12 +43,20 @@ export async function runCLI(): Promise<void> {
     .option('--args <args...>', 'Server command arguments (for stdio transport)')
     .option('--url <url>', 'Server URL (for sse/http transport)')
     .option('--env <env...>', 'Environment variables for stdio (KEY=value format)')
-    .option('--auth-type <type>', 'Authentication type (bearer|client_credentials)')
+    .option(
+      '--auth-type <type>',
+      'Authentication type (bearer|basic|client_credentials|private_key_jwt|static_private_key_jwt)'
+    )
     .option('--auth-token <token>', 'Bearer token for authentication')
+    .option('--auth-username <username>', 'Username for Basic Auth')
+    .option('--auth-password <password>', 'Password for Basic Auth')
     .option('--auth-client-id <id>', 'OAuth client ID')
     .option('--auth-client-secret <secret>', 'OAuth client secret')
     .option('--auth-token-url <url>', 'OAuth token URL')
     .option('--auth-scope <scope>', 'OAuth scope')
+    .option('--auth-private-key <key>', 'Private key (PEM) for private_key_jwt')
+    .option('--auth-algorithm <alg>', 'Algorithm for JWT signing (RS256|ES256|HS256)')
+    .option('--auth-jwt-assertion <jwt>', 'Pre-built JWT assertion for static_private_key_jwt')
     .option('--probe', 'Probe the MCP server to validate and auto-generate steering')
     .option('--no-interactive', 'Non-interactive mode (uses defaults)')
     .action(async (options: CreateOptions) => {

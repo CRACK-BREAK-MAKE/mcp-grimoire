@@ -1,24 +1,32 @@
+# Test fixture for PostgreSQL MCP server
 name: postgres
 version: 1.0.0
-description: PostgreSQL database operations
+description: PostgreSQL database integration
 keywords:
   - database
+  - postgresql
   - sql
   - query
-  - postgres
-  - users
+  - data
+
 server:
+  transport: stdio
   command: npx
   args:
     - '-y'
     - '@modelcontextprotocol/server-postgres'
   env:
-    DATABASE_URL: postgresql://localhost/test
-steering: |
-  # Database Schema
-  Tables:
-    - users (id, email, created_at)
-    - orders (id, user_id, amount, status)
+    POSTGRES_CONNECTION_STRING: ${POSTGRES_URL}
 
-  # Security: Always use parameterized queries
-  # Performance: Use indexes for date filters
+steering: |
+  PostgreSQL MCP Server - Database operations
+
+  Available tools:
+  - query: Execute SQL queries
+  - list_tables: List database tables
+  - describe_table: Get table schema
+
+  Best practices:
+  - Always use parameterized queries
+  - Avoid SELECT * in production
+  - Use transactions for multi-step operations

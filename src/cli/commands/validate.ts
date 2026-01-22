@@ -100,9 +100,19 @@ export function validateCommand(filePath: string): void {
                 const authType = auth.type;
                 if (typeof authType !== 'string' || authType.length === 0) {
                   errors.push('Missing required field: server.auth.type');
-                } else if (!['bearer', 'client_credentials', 'oauth2', 'none'].includes(authType)) {
+                } else if (
+                  ![
+                    'bearer',
+                    'basic',
+                    'client_credentials',
+                    'private_key_jwt',
+                    'static_private_key_jwt',
+                    'oauth2',
+                    'none',
+                  ].includes(authType)
+                ) {
                   errors.push(
-                    'Field "server.auth.type" must be one of: bearer, client_credentials, oauth2, none'
+                    'Field "server.auth.type" must be one of: bearer, basic, client_credentials, private_key_jwt, static_private_key_jwt, oauth2, none'
                   );
                 }
 
@@ -112,6 +122,22 @@ export function validateCommand(filePath: string): void {
                   if (typeof token !== 'string' || token.length === 0) {
                     errors.push(
                       'Missing required field: server.auth.token (required for bearer auth)'
+                    );
+                  }
+                }
+
+                // Basic Auth validation
+                if (authType === 'basic') {
+                  const username = auth.username;
+                  const password = auth.password;
+                  if (typeof username !== 'string' || username.length === 0) {
+                    errors.push(
+                      'Missing required field: server.auth.username (required for basic auth)'
+                    );
+                  }
+                  if (typeof password !== 'string' || password.length === 0) {
+                    errors.push(
+                      'Missing required field: server.auth.password (required for basic auth)'
                     );
                   }
                 }
@@ -135,6 +161,46 @@ export function validateCommand(filePath: string): void {
                   if (typeof tokenUrl !== 'string' || tokenUrl.length === 0) {
                     errors.push(
                       'Missing required field: server.auth.tokenUrl (required for client_credentials)'
+                    );
+                  }
+                }
+
+                // Private Key JWT validation
+                if (authType === 'private_key_jwt') {
+                  const clientId = auth.clientId;
+                  const privateKey = auth.privateKey;
+                  if (typeof clientId !== 'string' || clientId.length === 0) {
+                    errors.push(
+                      'Missing required field: server.auth.clientId (required for private_key_jwt)'
+                    );
+                  }
+                  if (typeof privateKey !== 'string' || privateKey.length === 0) {
+                    errors.push(
+                      'Missing required field: server.auth.privateKey (required for private_key_jwt)'
+                    );
+                  }
+                  const algorithm = auth.algorithm;
+                  if (
+                    algorithm != null &&
+                    typeof algorithm === 'string' &&
+                    !['RS256', 'ES256', 'HS256'].includes(algorithm)
+                  ) {
+                    errors.push('Field "server.auth.algorithm" must be RS256, ES256, or HS256');
+                  }
+                }
+
+                // Static Private Key JWT validation
+                if (authType === 'static_private_key_jwt') {
+                  const clientId = auth.clientId;
+                  const jwtBearerAssertion = auth.jwtBearerAssertion;
+                  if (typeof clientId !== 'string' || clientId.length === 0) {
+                    errors.push(
+                      'Missing required field: server.auth.clientId (required for static_private_key_jwt)'
+                    );
+                  }
+                  if (typeof jwtBearerAssertion !== 'string' || jwtBearerAssertion.length === 0) {
+                    errors.push(
+                      'Missing required field: server.auth.jwtBearerAssertion (required for static_private_key_jwt)'
                     );
                   }
                 }

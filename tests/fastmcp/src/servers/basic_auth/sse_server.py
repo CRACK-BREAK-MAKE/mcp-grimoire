@@ -33,12 +33,18 @@ def create_server() -> FastMCP:
     username = os.environ.get("AUTH_USERNAME", DEFAULT_USERNAME)
     password = os.environ.get("AUTH_PASSWORD", DEFAULT_PASSWORD)
 
-    # Create basic auth verifier
+    # Additional credentials for testing special characters
+    additional_creds = [
+        ("admin", 'P@$$w0rd!#&*()[]{}|\\/<>?,.:;"\'\'`~+=-%^'),  # Special chars test
+    ]
+
+    # Create basic auth verifier with multiple credentials
     auth = BasicAuthTokenVerifier(
         username=username,
         password=password,
         client_id="basic-auth-sse",
         scopes=["read", "write"],
+        additional_credentials=additional_creds,
     )
 
     # Create FastMCP server with authentication

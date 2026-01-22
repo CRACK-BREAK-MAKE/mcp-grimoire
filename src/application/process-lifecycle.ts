@@ -1,15 +1,15 @@
 import type { ChildProcess } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { SpellConfig } from '../core/types';
-import type { ActiveSpell, Tool, SSEServerConfig, HTTPServerConfig } from '../core/types';
+import type { ActiveSpell, Tool } from '../core/types';
 import { logger } from '../utils/logger';
 import { normalizeCommand } from '../utils/cross-platform';
 import type { EmbeddingStorage } from '../infrastructure/embedding-storage';
 import { buildAuthHeaders, createAuthProvider } from '../infrastructure/auth-provider.js';
+import type { EnvManager } from '../infrastructure/env-manager';
 
 export class ProcessSpawnError extends Error {
   constructor(
@@ -45,12 +45,17 @@ export class ProcessLifecycleManager {
   private saveDebounceTimer?: NodeJS.Timeout;
   private readonly SAVE_DEBOUNCE_MS = 5000; // 5 seconds
 
+  // Environment variable resolution
+  private envManager?: EnvManager;
+
   /**
    * Create lifecycle manager
    * @param storage - Optional storage for persistence (survives restarts)
+   * @param envManager - Optional environment variable manager for expanding placeholders
    */
-  constructor(storage?: EmbeddingStorage) {
+  constructor(storage?: EmbeddingStorage, envManager?: EnvManager) {
     this.storage = storage;
+    this.envManager = envManager;
   }
 
   /**
@@ -384,12 +389,40 @@ export class ProcessLifecycleManager {
           platform: process.platform,
         });
 
+        // Expand environment variables using EnvManager
+        let expandedEnv: Record<string, string> | undefined;
+        if (serverConfig.env && this.envManager) {
+          expandedEnv = {};
+          for (const [key, value] of Object.entries(serverConfig.env)) {
+            expandedEnv[key] = this.envManager.expand(value);
+          }
+
+          // Validate that all placeholders were resolved
+          const missingVars: string[] = [];
+          for (const [key, value] of Object.entries(serverConfig.env)) {
+            const missing = this.envManager.validatePlaceholders(value);
+            if (missing.length > 0) {
+              missingVars.push(...missing.map((v) => `${key}=${v}`));
+            }
+          }
+
+          if (missingVars.length > 0) {
+            throw new ProcessSpawnError(
+              `Missing environment variables for spell '${name}': ${missingVars.join(', ')}. ` +
+                `Add these to ~/.grimoire/.env file.`,
+              name
+            );
+          }
+        } else {
+          expandedEnv = serverConfig.env as Record<string, string> | undefined;
+        }
+
         // StdioClientTransport will spawn the process itself
         // We don't need to spawn manually
         mcpTransport = new StdioClientTransport({
           command: normalizedCommand,
           args: serverConfig.args as string[],
-          env: serverConfig.env as Record<string, string> | undefined,
+          env: expandedEnv,
         });
 
         client = new Client(
@@ -416,97 +449,127 @@ export class ProcessLifecycleManager {
           spellName: name,
           pid: childProcess?.pid,
         });
-      } else if (transport === 'sse') {
-        // SSE: Connect to remote server
+      } else if (transport === 'sse' || transport === 'http') {
+        // UNIFIED: Both SSE and HTTP use StreamableHTTPClientTransport
+        // StreamableHTTPClientTransport supports both SSE (GET) and HTTP (POST) in MCP spec
         if (!('url' in config.server)) {
-          throw new ProcessSpawnError('SSE transport requires url', name);
+          throw new ProcessSpawnError(`${transport.toUpperCase()} transport requires url`, name);
         }
 
-        const serverConfig = config.server as SSEServerConfig;
+        const serverConfig = config.server;
 
-        logger.info('SPAWN', 'Connecting to SSE MCP server', {
-          spellName: name,
-          url: serverConfig.url,
-          hasAuth: !!serverConfig.auth,
-        });
-
-        // Phase 1: Bearer token - build static headers
-        const staticHeaders = buildAuthHeaders(serverConfig.headers, serverConfig.auth);
-
-        // Phase 2: OAuth Client Credentials - get token upfront
-        const oauthProvider = createAuthProvider(serverConfig.auth);
-
-        const authHeaders: Record<string, string> = { ...staticHeaders };
-
-        if (oauthProvider) {
-          // Phase 2: OAuth Client Credentials - fetch token before connecting
-          logger.info('SPAWN', 'Fetching OAuth access token for SSE connection', {
+        logger.info(
+          'SPAWN',
+          `Connecting to ${transport.toUpperCase()} MCP server (Streamable HTTP)`,
+          {
             spellName: name,
-          });
-
-          const accessToken = await oauthProvider.getAccessToken();
-          authHeaders['Authorization'] = `Bearer ${accessToken}`;
-        }
-
-        // Configure transport with auth headers
-        mcpTransport = new SSEClientTransport(new URL(serverConfig.url), {
-          requestInit: {
-            headers: authHeaders,
-          },
-        });
-
-        client = new Client(
-          {
-            name: `grimoire-${name}`,
-            version: '1.0.0',
-          },
-          {
-            capabilities: {},
+            transport,
+            url: serverConfig.url,
+            hasAuth: serverConfig.auth != null,
           }
         );
 
-        await client.connect(mcpTransport);
-
-        logger.info('SPAWN', 'SSE MCP server connected', {
-          spellName: name,
-          authType: serverConfig.auth?.type || 'none',
-        });
-      } else if (transport === 'http') {
-        // HTTP: Use Streamable HTTP transport (modern HTTP with SSE)
-        if (!('url' in config.server)) {
-          throw new ProcessSpawnError('HTTP transport requires url', name);
+        // Expand environment variables in headers
+        let expandedHeaders: Record<string, string> | undefined;
+        if (serverConfig.headers && this.envManager) {
+          expandedHeaders = {};
+          for (const [key, value] of Object.entries(serverConfig.headers)) {
+            expandedHeaders[key] = this.envManager.expand(value);
+          }
+        } else {
+          expandedHeaders = serverConfig.headers;
         }
 
-        const serverConfig = config.server as HTTPServerConfig;
-
-        logger.info('SPAWN', 'Connecting to HTTP MCP server (Streamable HTTP)', {
-          spellName: name,
-          url: serverConfig.url,
-          hasAuth: !!serverConfig.auth,
-        });
-
-        // Phase 1: Bearer token - build static headers
-        const staticHeaders = buildAuthHeaders(serverConfig.headers, serverConfig.auth);
-
-        // Phase 2: OAuth Client Credentials - get token upfront
-        const oauthProvider = createAuthProvider(serverConfig.auth);
-
-        const authHeaders: Record<string, string> = { ...staticHeaders };
-
-        if (oauthProvider) {
-          // Phase 2: OAuth Client Credentials - fetch token before connecting
-          logger.info('SPAWN', 'Fetching OAuth access token for HTTP connection', {
-            spellName: name,
-          });
-
-          const accessToken = await oauthProvider.getAccessToken();
-          authHeaders['Authorization'] = `Bearer ${accessToken}`;
+        // Expand environment variables in auth config (for non-OAuth auth types)
+        let expandedAuth = serverConfig.auth;
+        if (expandedAuth != null && this.envManager != null) {
+          if (
+            expandedAuth.type === 'bearer' &&
+            expandedAuth.token != null &&
+            expandedAuth.token !== ''
+          ) {
+            expandedAuth = {
+              ...expandedAuth,
+              token: this.envManager.expand(expandedAuth.token),
+            };
+          } else if (
+            expandedAuth.type === 'basic' &&
+            expandedAuth.username != null &&
+            expandedAuth.username !== '' &&
+            expandedAuth.password != null &&
+            expandedAuth.password !== ''
+          ) {
+            expandedAuth = {
+              ...expandedAuth,
+              username: this.envManager.expand(expandedAuth.username),
+              password: this.envManager.expand(expandedAuth.password),
+            };
+          } else if (expandedAuth.type === 'client_credentials' && this.envManager != null) {
+            // Expand OAuth client credentials
+            expandedAuth = {
+              ...expandedAuth,
+              clientId:
+                expandedAuth.clientId != null
+                  ? this.envManager.expand(expandedAuth.clientId)
+                  : undefined,
+              clientSecret:
+                expandedAuth.clientSecret != null
+                  ? this.envManager.expand(expandedAuth.clientSecret)
+                  : undefined,
+            };
+          } else if (expandedAuth.type === 'private_key_jwt' && this.envManager != null) {
+            // Expand Private Key JWT credentials
+            expandedAuth = {
+              ...expandedAuth,
+              clientId:
+                expandedAuth.clientId != null
+                  ? this.envManager.expand(expandedAuth.clientId)
+                  : undefined,
+              privateKey:
+                expandedAuth.privateKey != null
+                  ? this.envManager.expand(expandedAuth.privateKey)
+                  : undefined,
+            };
+          } else if (expandedAuth.type === 'static_private_key_jwt' && this.envManager != null) {
+            // Expand Static Private Key JWT credentials
+            expandedAuth = {
+              ...expandedAuth,
+              clientId:
+                expandedAuth.clientId != null
+                  ? this.envManager.expand(expandedAuth.clientId)
+                  : undefined,
+              jwtBearerAssertion:
+                expandedAuth.jwtBearerAssertion != null
+                  ? this.envManager.expand(expandedAuth.jwtBearerAssertion)
+                  : undefined,
+            };
+          }
         }
 
-        // Configure transport with auth headers
+        // Build static auth headers (Bearer, Basic Auth)
+        const staticHeaders = buildAuthHeaders(expandedHeaders, expandedAuth);
+
+        logger.info('SPAWN', 'Static auth headers built', {
+          spellName: name,
+          headers: staticHeaders,
+          authType: expandedAuth?.type,
+        });
+
+        // Create OAuth provider if needed (Client Credentials, Private Key JWT)
+        // For client_credentials, this will pre-fetch the token
+        const authProvider = createAuthProvider(expandedAuth);
+
+        logger.info('SPAWN', 'Auth provider created', {
+          spellName: name,
+          hasAuthProvider: !!authProvider,
+        });
+
+        // Configure transport with both static headers and auth provider
+        // SDK will use authProvider for OAuth flows, static headers for others
         mcpTransport = new StreamableHTTPClientTransport(new URL(serverConfig.url), {
+          authProvider,
           requestInit: {
-            headers: authHeaders,
+            headers: staticHeaders,
           },
         });
 
@@ -522,9 +585,11 @@ export class ProcessLifecycleManager {
 
         await client.connect(mcpTransport);
 
-        logger.info('SPAWN', 'HTTP MCP server connected (Streamable HTTP)', {
+        logger.info('SPAWN', `${transport.toUpperCase()} MCP server connected (Streamable HTTP)`, {
           spellName: name,
+          transport,
           authType: serverConfig.auth?.type || 'none',
+          hasAuthProvider: !!authProvider,
         });
       } else {
         throw new ProcessSpawnError(`Unknown transport: ${String(transport)}`, name);

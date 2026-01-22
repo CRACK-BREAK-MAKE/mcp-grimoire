@@ -100,3 +100,5 @@ html/
 # Only ignore user-specific IDE files, not the hooks themselves
 *.tgz
 *.bak
+
+tests/fastmcp-auth

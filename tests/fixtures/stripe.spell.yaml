@@ -1,24 +1,31 @@
+# Test fixture for Stripe MCP server
 name: stripe
 version: 1.0.0
-description: Stripe payment processing and subscription management
+description: Stripe payment processing integration
 keywords:
   - payment
   - stripe
+  - billing
   - subscription
-  - charge
-  - customer
+  - checkout
+
 server:
-  command: npx
-  args:
-    - '-y'
-    - '@stripe/mcp'
-    - '--api-key'
-    - '${STRIPE_API_KEY}'
-    - '--tools'
-    - 'customers,charges,payment_intents'
-  env:
-    STRIPE_API_KEY: ${STRIPE_API_KEY}  # Set your Stripe test key
+  transport: http
+  url: https://api.stripe.com/mcp
+  auth:
+    type: bearer
+    token: ${STRIPE_API_KEY}
+
 steering: |
-  # Always set idempotency keys
-  # Test mode uses sk_test_
-  # Verify webhook signatures
+  Stripe MCP Server - Payment operations
+
+  Available tools:
+  - create_customer: Create new customer
+  - create_payment: Process payment
+  - list_payments: List recent payments
+  - refund_payment: Issue refund
+
+  Best practices:
+  - Always handle payment failures gracefully
+  - Use idempotency keys for safe retries
+  - Test with test mode keys before production

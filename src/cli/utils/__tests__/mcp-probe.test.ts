@@ -32,18 +32,12 @@ describe('generateSteeringFromTools', () => {
 
     const steering = generateSteeringFromTools('test-server', tools);
 
-    // New format uses # for title and "Test server" (not "Test-server")
-    expect(steering).toContain('# Test server - Expert Guidance');
-    expect(steering).toContain('## Tools (2)'); // New format
-    expect(steering).toContain('## When to Use'); // New section
-    expect(steering).toContain('## Workflow'); // New section
-    expect(steering).toContain('## Key Practices'); // New section
+    // Compact format: title with "When to Use", keywords line, tools list
+    expect(steering).toContain('# test-server - When to Use');
+    expect(steering).toContain('Use when user needs: test, server operations');
+    expect(steering).toContain('**Available Tools (2)**:');
     expect(steering).toContain('test_echo');
-    expect(steering).toContain('Echoes back the input');
-    expect(steering).toContain('Required: message');
     expect(steering).toContain('test_add');
-    expect(steering).toContain('Adds two numbers');
-    expect(steering).toContain('Required: a, b');
   });
 
   it('should handle tools with optional parameters', () => {
@@ -65,9 +59,10 @@ describe('generateSteeringFromTools', () => {
 
     const steering = generateSteeringFromTools('db', tools);
 
-    expect(steering).toContain('Required: query');
-    // Note: New compact format only shows required params, optional are omitted for brevity
-    // This matches our <500 token constraint
+    // Compact format only lists tool names, no parameter details
+    expect(steering).toContain('# db - When to Use');
+    expect(steering).toContain('**Available Tools (1)**:');
+    expect(steering).toContain('test_query');
   });
 
   it('should include server info when provided', () => {
@@ -87,9 +82,10 @@ describe('generateSteeringFromTools', () => {
       version: '1.0.0',
     });
 
-    // Server info removed in new compact format to save tokens
-    // Focus is on tools and best practices only
-    expect(steering).toContain('# Server - Expert Guidance');
+    // Compact format includes server name and version in title
+    expect(steering).toContain('# Test Server (v1.0.0) - When to Use');
+    expect(steering).toContain('**Available Tools (1)**:');
+    expect(steering).toContain('test_tool');
   });
 
   it('should group tools by prefix', () => {
@@ -113,10 +109,13 @@ describe('generateSteeringFromTools', () => {
 
     const steering = generateSteeringFromTools('multi', tools);
 
-    // New format still groups tools but uses simpler format
-    expect(steering).toContain('**file**:'); // Groups are still shown
+    // Compact format groups tools by prefix
+    expect(steering).toContain('# multi - When to Use');
+    expect(steering).toContain('**Available Tools (3)**:');
+    expect(steering).toContain('**file**:');
     expect(steering).toContain('**db**:');
     expect(steering).toContain('file_read');
+    expect(steering).toContain('file_write');
     expect(steering).toContain('db_query');
   });
 
@@ -129,8 +128,11 @@ describe('generateSteeringFromTools', () => {
 
     const steering = generateSteeringFromTools('many', tools);
 
-    // New format uses emoji-based tip for many tools
-    expect(steering).toContain('10 tools available - read descriptions carefully');
+    // Compact format lists up to 15 tools, shows count
+    expect(steering).toContain('# many - When to Use');
+    expect(steering).toContain('**Available Tools (10)**:');
+    expect(steering).toContain('tool_0');
+    expect(steering).toContain('tool_9');
   });
 });
 

@@ -102,6 +102,25 @@ vi.mock('../../utils/paths', () => {
   };
 });
 
+vi.mock('../../infrastructure/env-manager', () => {
+  return {
+    EnvManager: class MockEnvManager {
+      async load() {
+        return undefined;
+      }
+      async close() {
+        return undefined;
+      }
+      get() {
+        return '';
+      }
+      getAll() {
+        return {};
+      }
+    },
+  };
+});
+
 vi.mock('../../application/process-lifecycle', () => {
   return {
     ProcessLifecycleManager: class MockProcessLifecycleManager {

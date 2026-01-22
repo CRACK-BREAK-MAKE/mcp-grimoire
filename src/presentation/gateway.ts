@@ -10,6 +10,7 @@ import { YAMLConfigLoader } from '../infrastructure/config-loader';
 import { EmbeddingService } from '../infrastructure/embedding-service';
 import { EmbeddingStorage } from '../infrastructure/embedding-storage';
 import { SpellWatcher } from '../infrastructure/spell-watcher';
+import { EnvManager } from '../infrastructure/env-manager';
 import {
   ConfidenceTier,
   type Tool,
@@ -37,13 +38,15 @@ export class GrimoireServer {
   private embeddingStorage: EmbeddingStorage;
   private watcher: SpellWatcher | null = null;
   private configLoader: YAMLConfigLoader;
+  private envManager: EnvManager;
 
   constructor() {
     this.configLoader = new YAMLConfigLoader();
     this.discovery = new SpellDiscovery(this.configLoader);
     this.embeddingStorage = new EmbeddingStorage();
     this.injector = new SteeringInjector();
-    this.lifecycle = new ProcessLifecycleManager(this.embeddingStorage); // Inject storage for persistence
+    this.envManager = new EnvManager();
+    this.lifecycle = new ProcessLifecycleManager(this.embeddingStorage, this.envManager);
     this.router = new ToolRouter();
 
     this.server = new Server(
@@ -678,6 +681,13 @@ export class GrimoireServer {
     await ensureDirectories();
     logger.info('STARTUP', 'Grimoire directory ready', {
       path: this.discovery.getSpellDirectory(),
+    });
+
+    // Load environment variables from ~/.grimoire/.env
+    await this.envManager.load();
+    const envVarCount = Object.keys(this.envManager.getAll()).length;
+    logger.info('STARTUP', 'Loaded environment variables', {
+      count: envVarCount,
     });
 
     // Initialize embedding service and load cached embeddings

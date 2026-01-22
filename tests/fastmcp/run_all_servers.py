@@ -75,9 +75,9 @@ def main() -> None:
         processes.append(p)
         time.sleep(0.5)
     
-    print("\n" + "="*60)
+    print("==================================================================")
     print("All servers are running!")
-    print("="*60)
+    print("==================================================================")
     print("\nServer URLs:")
     print(f"  Basic Auth HTTP:     http://localhost:{PORT_BASIC_AUTH_HTTP}/mcp")
     print(f"  Basic Auth SSE:      http://localhost:{PORT_BASIC_AUTH_SSE}/sse")
@@ -90,7 +90,7 @@ def main() -> None:
     print(f"  No Auth SSE:         http://localhost:{PORT_NO_AUTH_SSE}/sse")
     print(f"  OAuth2 Provider:     http://localhost:{OAUTH2_PROVIDER_PORT}")
     print("\nPress Ctrl+C to stop all servers")
-    print("="*60 + "\n")
+    print("==================================================================")
     
     try:
         # Keep main process alive

@@ -7,7 +7,11 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { getSpellDirectory } from '../../utils/paths';
 import { stdioTemplate, sseTemplate, httpTemplate } from '../templates';
-import { probeMCPServer, generateSteeringFromTools } from '../utils/mcp-probe';
+import {
+  probeMCPServer,
+  generateSteeringFromTools,
+  generateDescriptionFromProbe,
+} from '../utils/mcp-probe';
 import { parse, stringify } from 'yaml';
 import type { SpellConfig, AuthConfig } from '../../core/types';
 import {
@@ -37,10 +41,15 @@ export interface CreateOptions {
   // CLI-specific auth fields (parsed into auth)
   authType?: string;
   authToken?: string;
+  authUsername?: string;
+  authPassword?: string;
   authClientId?: string;
   authClientSecret?: string;
   authTokenUrl?: string;
   authScope?: string;
+  authPrivateKey?: string;
+  authAlgorithm?: string;
+  authJwtAssertion?: string;
 }
 
 export async function createCommand(options: CreateOptions): Promise<void> {
@@ -78,6 +87,18 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         type: 'bearer',
         token: options.authToken,
       };
+    } else if (
+      options.authType === 'basic' &&
+      options.authUsername != null &&
+      options.authUsername.trim() !== '' &&
+      options.authPassword != null &&
+      options.authPassword.trim() !== ''
+    ) {
+      options.auth = {
+        type: 'basic',
+        username: options.authUsername,
+        password: options.authPassword,
+      };
     } else if (options.authType === 'client_credentials') {
       if (
         options.authClientId == null ||
@@ -97,6 +118,37 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         clientSecret: options.authClientSecret,
         tokenUrl: options.authTokenUrl,
         scope: options.authScope,
+      };
+    } else if (options.authType === 'private_key_jwt') {
+      if (
+        options.authClientId == null ||
+        options.authClientId.trim() === '' ||
+        options.authPrivateKey == null ||
+        options.authPrivateKey.trim() === ''
+      ) {
+        throw new Error('Private Key JWT requires --auth-client-id and --auth-private-key');
+      }
+      options.auth = {
+        type: 'private_key_jwt',
+        clientId: options.authClientId,
+        privateKey: options.authPrivateKey,
+        algorithm: (options.authAlgorithm as 'RS256' | 'ES256' | 'HS256') ?? 'RS256',
+      };
+    } else if (options.authType === 'static_private_key_jwt') {
+      if (
+        options.authClientId == null ||
+        options.authClientId.trim() === '' ||
+        options.authJwtAssertion == null ||
+        options.authJwtAssertion.trim() === ''
+      ) {
+        throw new Error(
+          'Static Private Key JWT requires --auth-client-id and --auth-jwt-assertion'
+        );
+      }
+      options.auth = {
+        type: 'static_private_key_jwt',
+        clientId: options.authClientId,
+        jwtBearerAssertion: options.authJwtAssertion,
       };
     }
   }
@@ -238,7 +290,7 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         });
       }
 
-      // Ask about authentication (Phase 1: Bearer token only)
+      // Ask about authentication (supports Bearer, Basic Auth, OAuth Client Credentials)
       if (!options.auth) {
         const needsAuth = await confirm({
           message: 'Does this server require authentication?',
@@ -250,17 +302,37 @@ export async function createCommand(options: CreateOptions): Promise<void> {
             message: 'Authentication type:',
             options: [
               {
+                label: 'none - No Authentication',
+                value: 'none',
+                description: 'Server does not require authentication',
+              },
+              {
                 label: 'bearer - Bearer Token (API Key)',
                 value: 'bearer',
                 description: 'Use Authorization: Bearer <token> header',
               },
               {
-                label: 'none - No Authentication',
-                value: 'none',
-                description: 'Server does not require authentication',
+                label: 'basic - Basic Auth (Username + Password)',
+                value: 'basic',
+                description: 'Use Authorization: Basic header with username:password',
+              },
+              {
+                label: 'client_credentials - OAuth Client Credentials',
+                value: 'client_credentials',
+                description: 'OAuth 2.0 machine-to-machine authentication',
+              },
+              {
+                label: 'private_key_jwt - Private Key JWT',
+                value: 'private_key_jwt',
+                description: 'OAuth with JWT signed by private key (RFC 7523)',
+              },
+              {
+                label: 'static_private_key_jwt - Static Private Key JWT',
+                value: 'static_private_key_jwt',
+                description: 'OAuth with pre-built JWT assertion',
               },
             ],
-            default: 'bearer',
+            default: 'none',
           });
 
           if (authType === 'bearer') {
@@ -272,6 +344,93 @@ export async function createCommand(options: CreateOptions): Promise<void> {
             options.auth = {
               type: 'bearer',
               token,
+            };
+          } else if (authType === 'basic') {
+            const username = await text({
+              message: 'Username (use ${VAR} for environment variable):',
+              default: '${API_USERNAME}',
+            });
+            const password = await text({
+              message: 'Password (use ${VAR} for environment variable):',
+              default: '${API_PASSWORD}',
+            });
+
+            options.auth = {
+              type: 'basic',
+              username,
+              password,
+            };
+          } else if (authType === 'client_credentials') {
+            const clientId = await text({
+              message: 'Client ID (use ${VAR} for environment variable):',
+              default: '${OAUTH_CLIENT_ID}',
+            });
+            const clientSecret = await text({
+              message: 'Client Secret (use ${VAR} for environment variable):',
+              default: '${OAUTH_CLIENT_SECRET}',
+            });
+            const tokenUrl = await text({
+              message: 'Token endpoint URL:',
+              default: 'https://oauth.example.com/token',
+            });
+            const needsScope = await confirm({
+              message: 'Does this OAuth flow require a scope?',
+              default: false,
+            });
+            let scope: string | undefined;
+            if (needsScope) {
+              scope = await text({
+                message: 'OAuth scope (space-separated):',
+                default: 'api.read api.write',
+              });
+            }
+
+            options.auth = {
+              type: 'client_credentials',
+              clientId,
+              clientSecret,
+              tokenUrl,
+              scope,
+            };
+          } else if (authType === 'private_key_jwt') {
+            const clientId = await text({
+              message: 'Client ID (use ${VAR} for environment variable):',
+              default: '${OAUTH_CLIENT_ID}',
+            });
+            const privateKey = await text({
+              message: 'Private Key PEM (use ${VAR} for environment variable):',
+              default: '${PRIVATE_KEY_PEM}',
+            });
+            const algorithm = await select({
+              message: 'JWT Signing Algorithm:',
+              options: [
+                { label: 'RS256 - RSA with SHA-256', value: 'RS256' },
+                { label: 'ES256 - ECDSA with SHA-256', value: 'ES256' },
+                { label: 'HS256 - HMAC with SHA-256', value: 'HS256' },
+              ],
+              default: 'RS256',
+            });
+
+            options.auth = {
+              type: 'private_key_jwt',
+              clientId,
+              privateKey,
+              algorithm: algorithm as 'RS256' | 'ES256' | 'HS256',
+            };
+          } else if (authType === 'static_private_key_jwt') {
+            const clientId = await text({
+              message: 'Client ID (use ${VAR} for environment variable):',
+              default: '${OAUTH_CLIENT_ID}',
+            });
+            const jwtBearerAssertion = await text({
+              message: 'Pre-built JWT Assertion (use ${VAR} for environment variable):',
+              default: '${JWT_ASSERTION}',
+            });
+
+            options.auth = {
+              type: 'static_private_key_jwt',
+              clientId,
+              jwtBearerAssertion,
             };
           }
         }
@@ -336,13 +495,13 @@ export async function createCommand(options: CreateOptions): Promise<void> {
   if (options.name == null || options.name === '') {
     console.error(formatError('--name (-n) is required in non-interactive mode'));
     console.error('Usage: grimoire create -n <spell-name> -t <transport> --no-interactive');
-    process.exit(1);
+    throw new Error('--name (-n) is required in non-interactive mode');
   }
 
   if (options.transport == null || options.transport === '') {
     console.error(formatError('--transport (-t) is required in non-interactive mode'));
     console.error('Valid transports: stdio, sse, http');
-    process.exit(1);
+    throw new Error('--transport (-t) is required in non-interactive mode');
   }
 
   // Validate transport type
@@ -350,14 +509,81 @@ export async function createCommand(options: CreateOptions): Promise<void> {
   if (!validTransports.includes(options.transport)) {
     console.error(formatError(`Invalid transport "${options.transport}"`));
     console.error(`Valid options: ${validTransports.join(', ')}`);
-    process.exit(1);
+    throw new Error(`Invalid transport "${options.transport}"`);
   }
 
   // Validate spell name
   if (!/^[a-z0-9][a-z0-9-]*$/.test(options.name)) {
     console.error(formatError('Spell name must be lowercase alphanumeric with hyphens only'));
     console.error('Example: my-spell, postgres, github-api');
-    process.exit(1);
+    throw new Error('Spell name must be lowercase alphanumeric with hyphens only');
+  }
+
+  // Validate transport-specific required fields (ALWAYS, not just when probing)
+  if (options.transport === 'stdio') {
+    // stdio requires command (unless interactive mode will prompt for it)
+    if (typeof options.command !== 'string' || options.command.trim().length === 0) {
+      console.error(formatError('--command is required for stdio transport'));
+      console.error(
+        'Example: grimoire create -n myspell -t stdio --command "npx" --no-interactive'
+      );
+      throw new Error('--command is required for stdio transport');
+    }
+  }
+
+  if (options.transport === 'sse' || options.transport === 'http') {
+    // http/sse requires URL (unless interactive mode will prompt for it)
+    if (typeof options.url !== 'string' || options.url.trim().length === 0) {
+      console.error(formatError(`--url is required for ${options.transport} transport`));
+      console.error(
+        `Example: grimoire create -n myspell -t ${options.transport} --url "http://localhost:3000" --no-interactive`
+      );
+      throw new Error(`--url is required for ${options.transport} transport`);
+    }
+
+    // Validate URL scheme
+    if (!options.url.startsWith('http://') && !options.url.startsWith('https://')) {
+      console.error(formatError('URL must start with http:// or https://'));
+      console.error(`Invalid URL: ${options.url}`);
+      throw new Error('URL must start with http:// or https://');
+    }
+
+    // Validate URL format
+    try {
+      new URL(options.url);
+    } catch {
+      console.error(formatError(`Malformed URL: ${options.url}`));
+      console.error('URL must be a valid HTTP/HTTPS URL');
+      throw new Error(`Malformed URL: ${options.url}`);
+    }
+  }
+
+  // Validate auth completeness
+  if (options.authType === 'bearer') {
+    if (typeof options.authToken !== 'string' || options.authToken.trim().length === 0) {
+      console.error(formatError('--auth-token is required when using --auth-type bearer'));
+      console.error(
+        'Example: grimoire create -n myspell -t http --url "..." --auth-type bearer --auth-token "your-token" --no-interactive'
+      );
+      throw new Error('--auth-token is required when using --auth-type bearer');
+    }
+  }
+
+  if (options.authType === 'basic') {
+    if (typeof options.authUsername !== 'string' || options.authUsername.trim().length === 0) {
+      console.error(formatError('--auth-username is required when using --auth-type basic'));
+      console.error(
+        'Example: grimoire create -n myspell -t http --url "..." --auth-type basic --auth-username "user" --auth-password "pass" --no-interactive'
+      );
+      throw new Error('--auth-username is required when using --auth-type basic');
+    }
+    if (typeof options.authPassword !== 'string' || options.authPassword.trim().length === 0) {
+      console.error(formatError('--auth-password is required when using --auth-type basic'));
+      console.error(
+        'Example: grimoire create -n myspell -t http --url "..." --auth-type basic --auth-username "user" --auth-password "pass" --no-interactive'
+      );
+      throw new Error('--auth-password is required when using --auth-type basic');
+    }
   }
 
   // Remote servers (SSE/HTTP) MUST always be probed to verify connectivity (if URL is provided)
@@ -385,7 +611,7 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         console.error(
           'Or create without probe: grimoire create -n myspell -t stdio --no-interactive'
         );
-        process.exit(1);
+        throw new Error('--command is required when using --probe with stdio transport');
       }
     }
 
@@ -400,7 +626,7 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         console.error(
           `Or create without probe: grimoire create -n myspell -t ${options.transport} --no-interactive`
         );
-        process.exit(1);
+        throw new Error(`--url is required when using --probe with ${options.transport} transport`);
       }
     }
 
@@ -458,12 +684,13 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         console.log('   - Server command not found or not installed');
         console.log('   - Server requires environment variables');
         console.log('   - Server takes too long to start (increase timeout or check logs)');
-        console.log(`\n${formatInfo('The spell will still be created with a basic template.')}`);
-        console.log('   You can manually add steering instructions later.\n');
+        console.log('   - Command path is incorrect or not in PATH');
+        console.error(`\n${formatError('Cannot create spell for unreachable stdio server.')}`);
+        console.error(`   Please ensure the command is installed and working.`);
+        console.error(`   Test manually: ${options.command} ${(options.args || []).join(' ')}\n`);
         /* eslint-enable no-console */
 
-        // For stdio, continue without probe results (command might not be installed yet)
-        probeResult = null;
+        throw new Error(`Cannot create spell for unreachable stdio server: ${probeResult.error}`);
       } else {
         // For remote servers (SSE/HTTP), fail and exit - no point creating spell for unreachable server
         console.error('   - Server is not running or not reachable');
@@ -477,7 +704,7 @@ export async function createCommand(options: CreateOptions): Promise<void> {
           `   Then try again: grimoire create -n ${options.name} -t ${options.transport} --url "${options.url}"\n`
         );
 
-        process.exit(1);
+        throw new Error(`Cannot create spell for unreachable remote server: ${probeResult.error}`);
       }
     } else {
       spinner.stop('Server probe successful!');
@@ -520,28 +747,49 @@ export async function createCommand(options: CreateOptions): Promise<void> {
   /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
   const config: any = parse(template);
 
+  // Track literal values that need to go to .env file
+  const envVarsToWrite: Record<string, string> = {};
+
   // Update server configuration based on transport type
   if (options.transport === 'stdio' && options.command != null && options.command.trim() !== '') {
     config.server.command = options.command;
     config.server.args = options.args || [];
-    // Add environment variables if provided (restore original format with ${VAR})
+    // Add environment variables if provided
     if (originalEnv) {
+      let envRecord: Record<string, string> = {};
+
       if (Array.isArray(originalEnv)) {
-        // Convert array format back to Record, preserving ${VAR} syntax
-        const envRecord: Record<string, string> = {};
+        // Convert array format to Record
         for (const envPair of originalEnv) {
           const [key, ...valueParts] = envPair.split('=');
           if (key && valueParts.length > 0) {
             envRecord[key] = valueParts.join('=');
           }
         }
-        // Only set if not empty
-        if (Object.keys(envRecord).length > 0) {
-          config.server.env = envRecord;
+      } else {
+        envRecord = originalEnv;
+      }
+
+      // Transform literals into placeholders with spell name prefix (namespaced)
+      // Normalize spell name for variable prefix (uppercase, alphanumeric only)
+      const spellPrefix = options.name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+      const envForYAML: Record<string, string> = {};
+
+      for (const [key, value] of Object.entries(envRecord)) {
+        if (value.includes('${')) {
+          // Already a placeholder, use as-is
+          envForYAML[key] = value;
+        } else {
+          // Literal value - create NAMESPACED placeholder for YAML, save to .env
+          // This prevents collisions when multiple spells use same env var names
+          const varName = `${spellPrefix}__${key}`;
+          envForYAML[key] = `\${${varName}}`;
+          envVarsToWrite[varName] = value;
         }
-      } else if (Object.keys(originalEnv).length > 0) {
-        // Only set if not empty
-        config.server.env = originalEnv;
+      }
+
+      if (Object.keys(envForYAML).length > 0) {
+        config.server.env = envForYAML;
       }
     }
   } else if (
@@ -551,28 +799,89 @@ export async function createCommand(options: CreateOptions): Promise<void> {
   ) {
     config.server.url = options.url.trim();
 
-    // Add authentication if provided (restore original ${VAR} syntax)
+    // Add authentication if provided
     if (options.auth?.type != null && options.auth.type !== 'none') {
-      // Clone auth config but use original values for secrets
       const authConfig = { ...options.auth };
+      // Normalize spell name for variable prefix (uppercase, alphanumeric only)
+      const spellPrefix = options.name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+
       if (
         options.auth.type === 'bearer' &&
         originalAuthToken != null &&
         originalAuthToken.trim() !== ''
       ) {
-        authConfig.token = originalAuthToken;
+        if (originalAuthToken.includes('${')) {
+          // Already a placeholder
+          authConfig.token = originalAuthToken;
+        } else {
+          // Literal value - create namespaced placeholder, save to .env
+          const varName = `${spellPrefix}__API_TOKEN`;
+          authConfig.token = `\${${varName}}`;
+          envVarsToWrite[varName] = originalAuthToken;
+        }
+      } else if (options.auth.type === 'basic') {
+        const originalUsername = options.auth.username;
+        const originalPassword = options.auth.password;
+
+        if (originalUsername != null && originalUsername.trim() !== '') {
+          if (originalUsername.includes('${')) {
+            authConfig.username = originalUsername;
+          } else {
+            const varName = `${spellPrefix}__API_USERNAME`;
+            authConfig.username = `\${${varName}}`;
+            envVarsToWrite[varName] = originalUsername;
+          }
+        }
+        if (originalPassword != null && originalPassword.trim() !== '') {
+          if (originalPassword.includes('${')) {
+            authConfig.password = originalPassword;
+          } else {
+            const varName = `${spellPrefix}__API_PASSWORD`;
+            authConfig.password = `\${${varName}}`;
+            envVarsToWrite[varName] = originalPassword;
+          }
+        }
       } else if (options.auth.type === 'client_credentials') {
-        if (originalAuthClientId != null && originalAuthClientId.trim() !== '')
-          authConfig.clientId = originalAuthClientId;
-        if (originalAuthClientSecret != null && originalAuthClientSecret.trim() !== '')
-          authConfig.clientSecret = originalAuthClientSecret;
+        if (originalAuthClientId != null && originalAuthClientId.trim() !== '') {
+          if (originalAuthClientId.includes('${')) {
+            authConfig.clientId = originalAuthClientId;
+          } else {
+            const varName = `${spellPrefix}__OAUTH_CLIENT_ID`;
+            authConfig.clientId = `\${${varName}}`;
+            envVarsToWrite[varName] = originalAuthClientId;
+          }
+        }
+        if (originalAuthClientSecret != null && originalAuthClientSecret.trim() !== '') {
+          if (originalAuthClientSecret.includes('${')) {
+            authConfig.clientSecret = originalAuthClientSecret;
+          } else {
+            const varName = `${spellPrefix}__OAUTH_CLIENT_SECRET`;
+            authConfig.clientSecret = `\${${varName}}`;
+            envVarsToWrite[varName] = originalAuthClientSecret;
+          }
+        }
       }
       config.server.auth = authConfig;
     }
 
     // Add custom headers if provided
     if (options.headers && Object.keys(options.headers).length > 0) {
-      config.server.headers = options.headers;
+      const headersForYAML: Record<string, string> = {};
+      // Normalize spell name for variable prefix (uppercase, alphanumeric only)
+      const spellPrefix = options.name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+      for (const [headerName, headerValue] of Object.entries(options.headers)) {
+        if (headerValue.includes('${')) {
+          // Already a placeholder
+          headersForYAML[headerName] = headerValue;
+        } else {
+          // Literal value - create namespaced placeholder, save to .env
+          const headerVarName = headerName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+          const varName = `${spellPrefix}__${headerVarName}`;
+          headersForYAML[headerName] = `\${${varName}}`;
+          envVarsToWrite[varName] = headerValue;
+        }
+      }
+      config.server.headers = headersForYAML;
     }
   }
 
@@ -604,10 +913,12 @@ export async function createCommand(options: CreateOptions): Promise<void> {
         ? allKeywords
         : [...allKeywords, 'mcp', 'server', 'tools'].slice(0, 15);
 
-    // Update description with tool count
-    const baseDescription =
-      typeof config.description === 'string' ? config.description : 'MCP Server';
-    config.description = `${baseDescription}\n\nProvides ${probeResult.tools.length} tools for various operations.`;
+    // Generate dynamic description from server info and tools
+    config.description = generateDescriptionFromProbe(
+      probeResult,
+      options.name,
+      options.transport || 'stdio'
+    );
   }
   /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 
@@ -620,6 +931,30 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
   try {
     writeFileSync(filePath, template, 'utf-8');
+
+    // Write literal values to ~/.grimoire/.env file
+    if (Object.keys(envVarsToWrite).length > 0) {
+      const { EnvManager } = await import('../../infrastructure/env-manager');
+      const { logger } = await import('../../utils/logger');
+      const envPath = join(spellDir, '.env');
+      const envManager = new EnvManager(envPath);
+      await envManager.load();
+
+      // Log env writes for debugging (mask values for security)
+      for (const [key, value] of Object.entries(envVarsToWrite)) {
+        // Mask credential value for security - show only length
+        const maskedValue =
+          value.length > 8 ? `${'*'.repeat(8)}... (${value.length} chars)` : '***';
+        logger.info('ENV', `Writing ${key}=${maskedValue}`);
+        await envManager.set(key, value);
+      }
+
+      /* eslint-disable no-console */
+      console.log(`\n${formatSuccess('Environment variables saved:')} ~/.grimoire/.env`);
+      console.log(`   ${dim('Variables:')} ${Object.keys(envVarsToWrite).join(', ')}`);
+      /* eslint-enable no-console */
+    }
+
     /* eslint-disable no-console */
     console.log(`\n${formatSuccess('Spell created:')} ${filePath}`);
     console.log(`   ${dim('Name:')} ${options.name}`);

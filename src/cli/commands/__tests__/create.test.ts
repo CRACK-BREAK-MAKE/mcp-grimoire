@@ -42,8 +42,8 @@ describe('createCommand', () => {
     it('should fail when name is missing', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ transport: 'stdio', interactive: false });
-      }).rejects.toThrow('Process.exit called with code 1');
+        await createCommand({ transport: 'stdio', command: 'npx', interactive: false });
+      }).rejects.toThrow('--name (-n) is required');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('--name (-n) is required')
@@ -54,7 +54,7 @@ describe('createCommand', () => {
       // Act & Assert
       await expect(async () => {
         await createCommand({ name: 'test', interactive: false });
-      }).rejects.toThrow('Process.exit called with code 1');
+      }).rejects.toThrow('--transport (-t) is required');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('--transport (-t) is required')
@@ -78,7 +78,7 @@ describe('createCommand', () => {
       // Act & Assert
       await expect(async () => {
         await createCommand({ name: 'test', transport: 'invalid', interactive: false });
-      }).rejects.toThrow('Process.exit called with code 1');
+      }).rejects.toThrow('Invalid transport "invalid"');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Invalid transport "invalid"')
@@ -108,8 +108,13 @@ describe('createCommand', () => {
     it('should reject uppercase letters', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'TestSpell', transport: 'stdio', interactive: false });
-      }).rejects.toThrow('Process.exit called with code 1');
+        await createCommand({
+          name: 'TestSpell',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
+      }).rejects.toThrow('Spell name must be lowercase alphanumeric');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Spell name must be lowercase alphanumeric with hyphens only')
@@ -119,35 +124,60 @@ describe('createCommand', () => {
     it('should reject underscores', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'test_spell', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: 'test_spell',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
     });
 
     it('should reject spaces', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'test spell', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: 'test spell',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
     });
 
     it('should reject names starting with hyphen', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: '-test', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: '-test',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
     });
 
     it('should reject special characters', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'test@spell', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: 'test@spell',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
     });
 
     it('should show example valid names', async () => {
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'Invalid_Name', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: 'Invalid_Name',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -159,7 +189,12 @@ describe('createCommand', () => {
   describe('Valid Spell Creation', () => {
     it('should create stdio spell successfully', async () => {
       // Act
-      await createCommand({ name: 'postgres', transport: 'stdio', interactive: false });
+      await createCommand({
+        name: 'postgres',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, 'postgres.spell.yaml');
@@ -173,7 +208,13 @@ describe('createCommand', () => {
 
     it('should create sse spell successfully', async () => {
       // Act
-      await createCommand({ name: 'streaming', transport: 'sse', interactive: false });
+      await createCommand({
+        name: 'streaming',
+        transport: 'sse',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, 'streaming.spell.yaml');
@@ -187,7 +228,13 @@ describe('createCommand', () => {
 
     it('should create http spell successfully', async () => {
       // Act
-      await createCommand({ name: 'api', transport: 'http', interactive: false });
+      await createCommand({
+        name: 'api',
+        transport: 'http',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, 'api.spell.yaml');
@@ -201,7 +248,12 @@ describe('createCommand', () => {
 
     it('should accept hyphenated names', async () => {
       // Act
-      await createCommand({ name: 'github-api', transport: 'stdio', interactive: false });
+      await createCommand({
+        name: 'github-api',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, 'github-api.spell.yaml');
@@ -210,7 +262,12 @@ describe('createCommand', () => {
 
     it('should accept numeric characters in name', async () => {
       // Act
-      await createCommand({ name: 'test123', transport: 'stdio', interactive: false });
+      await createCommand({
+        name: 'test123',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, 'test123.spell.yaml');
@@ -219,7 +276,12 @@ describe('createCommand', () => {
 
     it('should accept name starting with digit', async () => {
       // Act
-      await createCommand({ name: '3dtools', transport: 'stdio', interactive: false });
+      await createCommand({
+        name: '3dtools',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, '3dtools.spell.yaml');
@@ -230,7 +292,7 @@ describe('createCommand', () => {
   describe('Success Messages', () => {
     it('should show success message with file path', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       // New format uses formatSuccess() which produces "✓ Spell created:"
@@ -242,7 +304,13 @@ describe('createCommand', () => {
 
     it('should show spell details', async () => {
       // Act
-      await createCommand({ name: 'postgres', transport: 'sse', interactive: false });
+      await createCommand({
+        name: 'postgres',
+        transport: 'sse',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
 
       // Assert
       // New format uses dim() for labels
@@ -252,7 +320,7 @@ describe('createCommand', () => {
 
     it('should show next steps', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('📝 Next steps:'));
@@ -266,7 +334,7 @@ describe('createCommand', () => {
 
     it('should show validate command suggestion', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('grimoire validate'));
@@ -276,7 +344,12 @@ describe('createCommand', () => {
   describe('File Creation', () => {
     it('should create file with correct name', async () => {
       // Act
-      await createCommand({ name: 'myspell', transport: 'stdio', interactive: false });
+      await createCommand({
+        name: 'myspell',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       expect(existsSync(join(testDir, 'myspell.spell.yaml'))).toBe(true);
@@ -284,7 +357,7 @@ describe('createCommand', () => {
 
     it('should create file with .spell.yaml extension', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       const filePath = join(testDir, 'test.spell.yaml');
@@ -294,7 +367,7 @@ describe('createCommand', () => {
 
     it('should create file with valid YAML content', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       const filePath = join(testDir, 'test.spell.yaml');
@@ -306,7 +379,7 @@ describe('createCommand', () => {
 
     it('should create file with correct permissions', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       const filePath = join(testDir, 'test.spell.yaml');
@@ -319,7 +392,12 @@ describe('createCommand', () => {
   describe('Template Content', () => {
     it('should generate template with correct spell name', async () => {
       // Act
-      await createCommand({ name: 'postgres', transport: 'stdio', interactive: false });
+      await createCommand({
+        name: 'postgres',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       const filePath = join(testDir, 'postgres.spell.yaml');
@@ -330,7 +408,7 @@ describe('createCommand', () => {
 
     it('should generate template with version', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       const filePath = join(testDir, 'test.spell.yaml');
@@ -341,7 +419,7 @@ describe('createCommand', () => {
 
     it('should generate template with keywords', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       const filePath = join(testDir, 'test.spell.yaml');
@@ -353,7 +431,7 @@ describe('createCommand', () => {
 
     it('should generate template with steering section', async () => {
       // Act
-      await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'test', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       const filePath = join(testDir, 'test.spell.yaml');
@@ -371,7 +449,12 @@ describe('createCommand', () => {
 
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: 'test',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Directory not found'));
@@ -386,7 +469,12 @@ describe('createCommand', () => {
 
       // Act & Assert
       await expect(async () => {
-        await createCommand({ name: 'test', transport: 'stdio', interactive: false });
+        await createCommand({
+          name: 'test',
+          transport: 'stdio',
+          command: 'npx',
+          interactive: false,
+        });
       }).rejects.toThrow();
     });
   });
@@ -394,9 +482,26 @@ describe('createCommand', () => {
   describe('Multiple Spells', () => {
     it('should allow creating multiple spells', async () => {
       // Act
-      await createCommand({ name: 'spell1', transport: 'stdio', interactive: false });
-      await createCommand({ name: 'spell2', transport: 'sse', interactive: false });
-      await createCommand({ name: 'spell3', transport: 'http', interactive: false });
+      await createCommand({
+        name: 'spell1',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
+      await createCommand({
+        name: 'spell2',
+        transport: 'sse',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
+      await createCommand({
+        name: 'spell3',
+        transport: 'http',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
 
       // Assert
       expect(existsSync(join(testDir, 'spell1.spell.yaml'))).toBe(true);
@@ -406,9 +511,26 @@ describe('createCommand', () => {
 
     it('should create spells with different transports', async () => {
       // Act
-      await createCommand({ name: 'stdio-test', transport: 'stdio', interactive: false });
-      await createCommand({ name: 'sse-test', transport: 'sse', interactive: false });
-      await createCommand({ name: 'http-test', transport: 'http', interactive: false });
+      await createCommand({
+        name: 'stdio-test',
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
+      await createCommand({
+        name: 'sse-test',
+        transport: 'sse',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
+      await createCommand({
+        name: 'http-test',
+        transport: 'http',
+        url: 'http://localhost:3000',
+        probe: false,
+        interactive: false,
+      });
 
       // Assert
       const stdioConfig = parse(
@@ -433,7 +555,12 @@ describe('createCommand', () => {
       const longName = 'very-long-spell-name-that-is-still-valid';
 
       // Act
-      await createCommand({ name: longName, transport: 'stdio', interactive: false });
+      await createCommand({
+        name: longName,
+        transport: 'stdio',
+        command: 'npx',
+        interactive: false,
+      });
 
       // Assert
       expect(existsSync(join(testDir, `${longName}.spell.yaml`))).toBe(true);
@@ -441,7 +568,7 @@ describe('createCommand', () => {
 
     it('should handle single character name', async () => {
       // Act
-      await createCommand({ name: 'a', transport: 'stdio', interactive: false });
+      await createCommand({ name: 'a', transport: 'stdio', command: 'npx', interactive: false });
 
       // Assert
       expect(existsSync(join(testDir, 'a.spell.yaml'))).toBe(true);
@@ -452,6 +579,7 @@ describe('createCommand', () => {
       await createCommand({
         name: 'my-super-long-spell-name',
         transport: 'stdio',
+        command: 'npx',
         interactive: false,
       });
 
@@ -470,10 +598,10 @@ describe('createCommand', () => {
           probe: true,
           interactive: false,
         });
-      }).rejects.toThrow('Process.exit called with code 1');
+      }).rejects.toThrow('--command is required for stdio transport');
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('--command is required when using --probe')
+        expect.stringContaining('--command is required')
       );
     });
 
@@ -486,11 +614,9 @@ describe('createCommand', () => {
           probe: true,
           interactive: false,
         });
-      }).rejects.toThrow('Process.exit called with code 1');
+      }).rejects.toThrow('--url is required for sse transport');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('--url is required when using --probe with sse')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--url is required'));
     });
 
     it('should fail probe when url is required but missing for http', async () => {
@@ -502,11 +628,9 @@ describe('createCommand', () => {
           probe: true,
           interactive: false,
         });
-      }).rejects.toThrow('Process.exit called with code 1');
+      }).rejects.toThrow('--url is required for http transport');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('--url is required when using --probe with http')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--url is required'));
     });
 
     it('should set command and args when provided without probe', async () => {
@@ -566,6 +690,7 @@ describe('createCommand', () => {
       await createCommand({
         name: 'test',
         transport: 'stdio',
+        command: 'npx',
         interactive: false,
       });
 

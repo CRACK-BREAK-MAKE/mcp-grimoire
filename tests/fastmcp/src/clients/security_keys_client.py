@@ -85,9 +85,9 @@ async def test_with_invalid_key() -> None:
 
 
 if __name__ == "__main__":
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
     logger.info("Testing Security Keys HTTP Client")
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
 
     logger.info("\nTest 1: With GITHUB_PAT")
     github_pat = os.environ.get("GITHUB_PAT", DEFAULT_GITHUB_PAT)

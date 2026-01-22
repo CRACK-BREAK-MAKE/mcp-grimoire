@@ -76,7 +76,7 @@ def log_startup(logger: logging.Logger, server_name: str, port: int, **kwargs: A
         >>> logger = get_logger(__name__)
         >>> log_startup(logger, "API Key SSE Server", 8003, api_keys_count=5)
     """
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
     logger.info(f"Starting {server_name}")
     logger.info(f"Port: {port}")
     
@@ -85,7 +85,7 @@ def log_startup(logger: logging.Logger, server_name: str, port: int, **kwargs: A
         formatted_key = key.replace('_', ' ').title()
         logger.info(f"{formatted_key}: {value}")
     
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
 
 
 def log_request(logger: logging.Logger, method: str, **details: Any) -> None:

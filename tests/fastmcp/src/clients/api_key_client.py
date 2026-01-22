@@ -80,9 +80,9 @@ async def test_with_invalid_key() -> None:
 
 
 if __name__ == "__main__":
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
     logger.info("Testing API Key HTTP Client")
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
 
     logger.info("\nTest 1: With valid API key")
     asyncio.run(test_api_key_http_client())

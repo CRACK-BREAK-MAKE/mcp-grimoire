@@ -90,9 +90,9 @@ async def test_without_auth() -> None:
 
 
 if __name__ == "__main__":
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
     logger.info("Testing Basic Auth HTTP Client")
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
 
     logger.info("\nTest 1: With valid credentials")
     asyncio.run(test_basic_auth_http_client())

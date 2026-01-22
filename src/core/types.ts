@@ -55,7 +55,14 @@ export interface StdioServerConfig {
  */
 export interface AuthConfig {
   /** Authentication type */
-  readonly type: 'bearer' | 'client_credentials' | 'oauth2' | 'none';
+  readonly type:
+    | 'bearer'
+    | 'client_credentials'
+    | 'private_key_jwt'
+    | 'static_private_key_jwt'
+    | 'oauth2'
+    | 'basic'
+    | 'none';
 
   // Phase 1: Bearer token authentication
   /** Bearer token (supports ${VAR} expansion) */
@@ -71,27 +78,38 @@ export interface AuthConfig {
   /** OAuth scope */
   readonly scope?: string;
 
+  // Phase 2: Private Key JWT (RFC 7523)
+  /** Private key for JWT signing (PEM format, supports ${VAR} expansion) */
+  readonly privateKey?: string;
+  /** Algorithm for JWT signing */
+  readonly algorithm?: 'RS256' | 'ES256' | 'HS256';
+
+  // Phase 2: Static Private Key JWT (pre-built JWT assertion)
+  /** Pre-built JWT bearer assertion (supports ${VAR} expansion) */
+  readonly jwtBearerAssertion?: string;
+
+  // Basic Authentication (username + password)
+  /** Username for Basic Auth (supports ${VAR} expansion) */
+  readonly username?: string;
+  /** Password for Basic Auth (supports ${VAR} expansion) */
+  readonly password?: string;
+
   // Phase 3: OAuth Authorization Code + PKCE
   /** OAuth authorization endpoint URL */
   readonly authorizationUrl?: string;
   /** Redirect URI for OAuth callback */
   readonly redirectUri?: string;
-
-  // Advanced: Custom JWT signing (future)
-  /** Private key for JWT signing */
-  readonly privateKey?: string;
-  /** Algorithm for JWT signing */
-  readonly algorithm?: 'RS256' | 'ES256' | 'HS256';
 }
 
 /**
- * MCP server configuration (SSE transport)
+ * MCP server configuration (SSE/HTTP remote transport)
+ * Unified config for both SSE and HTTP since they're identical
  */
-export interface SSEServerConfig {
+export interface RemoteServerConfig {
   /** Transport type */
-  readonly transport: 'sse';
+  readonly transport: 'sse' | 'http';
 
-  /** SSE endpoint URL */
+  /** Server endpoint URL */
   readonly url: string;
 
   /** Authentication configuration (Phase 1+) */
@@ -102,26 +120,16 @@ export interface SSEServerConfig {
 }
 
 /**
- * MCP server configuration (HTTP transport)
+ * Legacy type aliases for backward compatibility
+ * @deprecated Use RemoteServerConfig instead
  */
-export interface HTTPServerConfig {
-  /** Transport type */
-  readonly transport: 'http';
-
-  /** HTTP endpoint URL */
-  readonly url: string;
-
-  /** Authentication configuration (Phase 1+) */
-  readonly auth?: AuthConfig;
-
-  /** Custom HTTP headers */
-  readonly headers?: Readonly<Record<string, string>>;
-}
+export type SSEServerConfig = RemoteServerConfig & { readonly transport: 'sse' };
+export type HTTPServerConfig = RemoteServerConfig & { readonly transport: 'http' };
 
 /**
  * MCP server configuration (all types)
  */
-export type ServerConfig = StdioServerConfig | SSEServerConfig | HTTPServerConfig;
+export type ServerConfig = StdioServerConfig | RemoteServerConfig;
 
 /**
  * MCP tool definition

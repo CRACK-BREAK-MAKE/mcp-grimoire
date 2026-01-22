@@ -110,6 +110,9 @@ export function getEmbeddingCachePath(): string {
  *
  * On Windows, inherits ACLs from parent directory
  *
+ * Also creates .env template file if it doesn't exist
+ * See ADR-0015 for environment variable resolution strategy
+ *
  * @throws Error if directory creation fails
  */
 export async function ensureDirectories(): Promise<void> {
@@ -125,6 +128,12 @@ export async function ensureDirectories(): Promise<void> {
     if (process.platform !== 'win32') {
       await chmod(grimoireDir, 0o700); // Owner read/write/execute only
     }
+
+    // Create .env template if it doesn't exist (ADR-0015)
+    // Lazy load to avoid circular dependency
+    const { createEnvTemplate } = await import('../infrastructure/env-manager');
+    const envPath = join(grimoireDir, '.env');
+    await createEnvTemplate(envPath);
 
     // Success (no logging here - gateway will log)
   } catch (error) {

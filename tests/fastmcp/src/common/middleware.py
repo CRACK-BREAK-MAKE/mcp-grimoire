@@ -43,7 +43,7 @@ class RequestHeaderLoggingMiddleware(Middleware):
         """Log HTTP headers when available."""
         headers = get_http_headers()
         if headers:
-            logger.debug("=" * 50)
+            logger.debug("=====================================================")
             logger.debug(f"[{self.server_prefix}] Request: {context.method}")
             logger.debug(f"[{self.server_prefix}] HTTP Headers:")
             
@@ -55,7 +55,7 @@ class RequestHeaderLoggingMiddleware(Middleware):
                 else:
                     logger.debug(f"[{self.server_prefix}]   {header_name}: {header_value}")
             
-            logger.debug("=" * 50)
+            logger.debug("=====================================================")
         
         return await call_next(context)
 

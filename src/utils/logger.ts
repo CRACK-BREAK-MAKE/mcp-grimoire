@@ -59,12 +59,14 @@ type Component =
   | 'STARTUP' // Initialization, discovery
   | 'INTENT' // Intent resolution
   | 'SPAWN' // Process/connection spawning
+  | 'PROBE' // Server probing and validation
   | 'TOOL' // Tool invocation
   | 'LIFECYCLE' // Cleanup, turn tracking
   | 'MCP' // MCP protocol details
   | 'WATCH' // File watching
   | 'CACHE' // Embedding cache
-  | 'AUTH'; // Authentication (Bearer, OAuth)
+  | 'AUTH' // Authentication (Bearer, OAuth, Basic)
+  | 'ENV'; // Environment variable resolution
 
 interface LogContext {
   [key: string]: unknown;

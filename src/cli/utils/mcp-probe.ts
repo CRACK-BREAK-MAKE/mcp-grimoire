@@ -5,12 +5,13 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { SpellConfig, SSEServerConfig, HTTPServerConfig } from '../../core/types';
+import type { SpellConfig, RemoteServerConfig } from '../../core/types';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { buildAuthHeaders, createAuthProvider } from '../../infrastructure/auth-provider.js';
+import { logger } from '../../utils/logger';
+import { buildAuthHeaders, createAuthProvider } from '../../infrastructure/auth-provider';
 
 export interface ProbeResult {
   success: boolean;
@@ -71,49 +72,85 @@ export async function probeMCPServer(
         env: serverConfig.env ? { ...serverConfig.env } : undefined,
       });
     } else if (transportType === 'sse') {
-      const serverConfig = config.server as SSEServerConfig;
+      // SSE transport uses older MCP protocol (2024-11-05): GET for SSE stream, POST to /messages
+      const serverConfig = config.server as RemoteServerConfig;
 
-      // Build authentication headers (ADR-0012: Bearer token)
+      logger.info('PROBE', '[SSE] Using SSEClientTransport (old MCP protocol)');
+      logger.debug('PROBE', 'Server config', {
+        url: serverConfig.url,
+        authType: serverConfig.auth?.type,
+        hasHeaders: !!serverConfig.headers,
+      });
+
+      // Build static auth headers (Bearer, Basic Auth)
       const staticHeaders = buildAuthHeaders(serverConfig.headers, serverConfig.auth);
 
-      // Create OAuth provider if needed (ADR-0014: OAuth Client Credentials)
-      const oauthProvider = createAuthProvider(serverConfig.auth);
+      logger.info('PROBE', '=== SENDING TO SSE SERVER ===');
+      logger.info('PROBE', 'URL', { url: serverConfig.url });
+      logger.info('PROBE', 'Auth Type', { type: serverConfig.auth?.type });
+      logger.info('PROBE', 'Headers being sent', { headers: staticHeaders });
+      logger.info('PROBE', '============================');
 
-      const authHeaders: Record<string, string> = { ...staticHeaders };
+      // Create OAuth provider if needed (Client Credentials, Private Key JWT)
+      const authProvider = createAuthProvider(serverConfig.auth);
 
-      if (oauthProvider) {
-        // Phase 2: OAuth Client Credentials - fetch token before connecting
-        const accessToken = await oauthProvider.getAccessToken();
-        authHeaders['Authorization'] = `Bearer ${accessToken}`;
-      }
+      logger.debug('PROBE', 'Has authProvider', { hasProvider: !!authProvider });
 
+      logger.info('PROBE', '=== CREATING SSE TRANSPORT ===');
+      logger.info('PROBE', 'Transport Type', { transportType });
+      logger.info('PROBE', 'Protocol', {
+        protocol: 'Old MCP (2024-11-05): GET /sse + POST /messages',
+      });
+      logger.info('PROBE', '==============================');
+
+      // Configure SSE transport with both static headers and auth provider
       transport = new SSEClientTransport(new URL(serverConfig.url), {
+        authProvider,
         requestInit: {
-          headers: authHeaders,
+          headers: staticHeaders,
         },
       });
-    } else if (transportType === 'http') {
-      const serverConfig = config.server as HTTPServerConfig;
 
-      // Build authentication headers (ADR-0012: Bearer token)
+      logger.info('PROBE', 'SSEClientTransport created successfully');
+    } else if (transportType === 'http') {
+      // HTTP transport uses newer MCP protocol (2025-03-26): Streamable HTTP
+      const serverConfig = config.server as RemoteServerConfig;
+
+      logger.info('PROBE', '[HTTP] Using StreamableHTTPClientTransport (new MCP protocol)');
+      logger.debug('PROBE', 'Server config', {
+        url: serverConfig.url,
+        authType: serverConfig.auth?.type,
+        hasHeaders: !!serverConfig.headers,
+      });
+
+      // Build static auth headers (Bearer, Basic Auth)
       const staticHeaders = buildAuthHeaders(serverConfig.headers, serverConfig.auth);
 
-      // Create OAuth provider if needed (ADR-0014: OAuth Client Credentials)
-      const oauthProvider = createAuthProvider(serverConfig.auth);
+      logger.info('PROBE', '=== SENDING TO HTTP SERVER ===');
+      logger.info('PROBE', 'URL', { url: serverConfig.url });
+      logger.info('PROBE', 'Auth Type', { type: serverConfig.auth?.type });
+      logger.info('PROBE', 'Headers being sent', { headers: staticHeaders });
+      logger.info('PROBE', '===============================');
 
-      const authHeaders: Record<string, string> = { ...staticHeaders };
+      // Create OAuth provider if needed (Client Credentials, Private Key JWT)
+      const authProvider = createAuthProvider(serverConfig.auth);
 
-      if (oauthProvider) {
-        // Phase 2: OAuth Client Credentials - fetch token before connecting
-        const accessToken = await oauthProvider.getAccessToken();
-        authHeaders['Authorization'] = `Bearer ${accessToken}`;
-      }
+      logger.debug('PROBE', 'Has authProvider', { hasProvider: !!authProvider });
 
+      logger.info('PROBE', '=== CREATING HTTP TRANSPORT ===');
+      logger.info('PROBE', 'Transport Type', { transportType });
+      logger.info('PROBE', 'Protocol', { protocol: 'New MCP (2025-03-26): Streamable HTTP' });
+      logger.info('PROBE', '================================');
+
+      // Configure HTTP transport with both static headers and auth provider
       transport = new StreamableHTTPClientTransport(new URL(serverConfig.url), {
+        authProvider,
         requestInit: {
-          headers: authHeaders,
+          headers: staticHeaders,
         },
       });
+
+      logger.info('PROBE', 'StreamableHTTPClientTransport created successfully');
     }
 
     client = new Client(
@@ -134,18 +171,43 @@ export async function probeMCPServer(
     });
 
     // Connect to server with timeout
-    await Promise.race([client.connect(transport!), timeoutPromise]);
+    logger.info('PROBE', '=== CONNECTING TO SERVER ===');
+    logger.info('PROBE', 'Transport type', { type: transportType });
+    logger.info('PROBE', 'Client info', { name: 'grimoire-probe', version: '1.0.0' });
+    logger.info('PROBE', '============================');
+
+    try {
+      await Promise.race([client.connect(transport!), timeoutPromise]);
+      logger.info('PROBE', '✓ Connected successfully!');
+    } catch (connectError: unknown) {
+      const error = connectError instanceof Error ? connectError : undefined;
+      logger.error('PROBE', '✗ Connection failed', error);
+      throw connectError;
+    }
 
     // Get tools list
-    const toolsResponse = await Promise.race([
-      client.listTools(),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Tools list timeout')), timeoutMs / 2);
-      }),
-    ]);
+    logger.info('PROBE', '=== REQUESTING TOOLS LIST ===');
+    let toolsResponse;
+    try {
+      toolsResponse = await Promise.race([
+        client.listTools(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Tools list timeout')), timeoutMs / 2);
+        }),
+      ]);
+      logger.info('PROBE', '✓ Tools list received', { count: toolsResponse.tools.length });
+    } catch (toolsError: unknown) {
+      const error = toolsError instanceof Error ? toolsError : undefined;
+      logger.error('PROBE', '✗ Tools list failed', error);
+      throw toolsError;
+    }
 
-    // Try to get server info (not critical if it fails)
-    const serverInfo: { name?: string; version?: string } = {};
+    // Get server info from MCP protocol
+    const serverVersion = client.getServerVersion();
+    const serverInfo: { name?: string; version?: string } = {
+      name: serverVersion?.name,
+      version: serverVersion?.version,
+    };
 
     // Success!
     return {
@@ -191,7 +253,7 @@ export async function probeMCPServer(
       return {
         success: false,
         error: error.message,
-      };
+      } as const;
     }
 
     return {
@@ -220,37 +282,140 @@ export async function probeMCPServer(
 }
 
 /**
- * Generate compact, high-quality steering instructions (target: <400 words / <500 tokens)
- * Following cap-js example structure but more concise
- * Following SRP: Each helper function has ONE job
+ * Generate dynamic description from probe results
+ * Creates a meaningful description based on server info, tool count, and transport type
+ */
+export function generateDescriptionFromProbe(
+  probeResult: ProbeResult,
+  spellName: string,
+  transport: string
+): string {
+  const serverName = probeResult.serverInfo?.name ?? spellName;
+  const serverVersion = probeResult.serverInfo?.version ?? '';
+  const toolCount = probeResult.tools?.length ?? 0;
+
+  // Build server identity line
+  let description = serverName;
+  if (serverVersion && serverVersion.trim().length > 0) {
+    description += ` v${serverVersion}`;
+  }
+
+  // Add transport information
+  const transportLabel = transport === 'stdio' ? 'stdio' : transport === 'sse' ? 'SSE' : 'HTTP';
+  description += ` MCP server (${transportLabel} transport)`;
+
+  // Add tool capability summary
+  if (toolCount > 0) {
+    description += `\n\nProvides ${toolCount} tool${toolCount === 1 ? '' : 's'}`;
+
+    // Categorize tools by common prefixes
+    const tools = probeResult.tools || [];
+    const categories = new Map<string, string[]>();
+
+    for (const tool of tools) {
+      const prefix = tool.name.split('_')[0];
+      if (!categories.has(prefix)) {
+        categories.set(prefix, []);
+      }
+      categories.get(prefix)!.push(tool.name);
+    }
+
+    // Generate capability description
+    if (categories.size > 1) {
+      const actions = Array.from(categories.keys()).slice(0, 5).join(', ');
+      description += ` for ${actions}`;
+      if (categories.size > 5) {
+        description += `, and more`;
+      }
+      description += ' operations';
+    } else {
+      description += ' for various operations';
+    }
+    description += '.';
+
+    // ====== ADD DETAILED TOOL DEFINITIONS (NOT IN STEERING) ======
+    // This is where tool details belong - steering is for intent resolution only
+    description += '\n\n## Available Tools\n\n';
+
+    const groups = groupTools(tools);
+    const hasMultipleGroups = Object.keys(groups).length > 1;
+
+    for (const [category, categoryTools] of Object.entries(groups)) {
+      if (hasMultipleGroups && category !== 'General') {
+        description += `### ${category}\n\n`;
+      }
+
+      for (const tool of categoryTools) {
+        const toolDesc = tool.description ?? 'No description';
+        description += `- **${tool.name}**: ${toolDesc}`;
+
+        // Add required params if any
+        if (tool.inputSchema != null && typeof tool.inputSchema === 'object') {
+          const schema = tool.inputSchema as {
+            properties?: Record<string, unknown>;
+            required?: string[];
+          };
+          const required = schema.required ?? [];
+          if (required.length > 0) {
+            description += ` (Required: ${required.join(', ')})`;
+          }
+        }
+        description += '\n';
+      }
+
+      if (hasMultipleGroups) {
+        description += '\n';
+      }
+    }
+  }
+
+  return description;
+}
+
+/**
+ * Generate MINIMAL steering instructions for intent resolution
+ * Purpose: Help AI agents choose the RIGHT server and RIGHT tools for user queries
+ * Target: <300 words / <400 tokens (gets injected into every tool description)
+ *
+ * Core Innovation: 94% token reduction by keeping steering minimal while listing tools
  */
 export function generateSteeringFromTools(
   spellName: string,
   tools: Tool[],
-  _serverInfo?: { name?: string; version?: string }
+  serverInfo?: { name?: string; version?: string }
 ): string {
-  const capitalizedName = spellName.charAt(0).toUpperCase() + spellName.slice(1).replace(/-/g, ' ');
+  const serverName = serverInfo?.name ?? spellName;
+  const serverVersion =
+    typeof serverInfo?.version === 'string' && serverInfo.version.trim().length > 0
+      ? ` (v${serverInfo.version})`
+      : '';
 
   // Infer domain from tool names and spell name
-  const domain = inferDomain(spellName, tools);
+  // const domain = inferDomain(spellName, tools);
+  const keywords = spellName.split('-').filter((k) => k.length > 2 && k !== 'spell');
 
-  let steering = `# ${capitalizedName} - Expert Guidance\n\n`;
+  let steering = `# ${serverName}${serverVersion} - When to Use\n\n`;
 
-  // Section 1: When to Use (30-50 words) - CRITICAL for intent resolution
-  const useCases = generateUseCases(spellName, tools, domain);
-  steering += `## When to Use\n${useCases}\n\n`;
+  // Section 1: Intent matching keywords from spell name
+  steering += `Use when user needs: ${keywords.join(', ')} operations\n\n`;
 
-  // Section 2: Tools (ONE LINE per tool, max 200 words)
-  steering += `## Tools (${tools.length})\n\n`;
-  steering += generateCompactToolList(tools);
+  // Section 2: Tool list for intent matching (CRITICAL - AI needs to see tool names)
+  steering += `**Available Tools (${tools.length})**:\n`;
 
-  // Section 3: Workflow (50 words, 3 steps)
-  const workflow = generateWorkflow(tools, domain);
-  steering += `\n## Workflow\n${workflow}\n\n`;
-
-  // Section 4: Key Practices (70-100 words, top 3-5)
-  const practices = generateBestPractices(domain, tools);
-  steering += `## Key Practices\n${practices}\n`;
+  // Group tools by operation for better readability
+  const groups = groupTools(tools);
+  for (const [category, categoryTools] of Object.entries(groups)) {
+    if (Object.keys(groups).length > 1 && category !== 'General') {
+      steering += `\n**${category}**: `;
+    }
+    // Just list tool names, no descriptions (descriptions are in spell.description)
+    const toolNames = categoryTools.slice(0, 15).map((t) => t.name);
+    steering += toolNames.join(', ');
+    if (categoryTools.length > 15) {
+      steering += `, ...${categoryTools.length - 15} more`;
+    }
+    steering += '\n';
+  }
 
   return steering;
 }
@@ -258,7 +423,8 @@ export function generateSteeringFromTools(
 /**
  * Infer domain from spell name and tool patterns (SRP: ONE job - domain detection)
  */
-function inferDomain(spellName: string, tools: Tool[]): string {
+// Not yet used - reserved for future enhancement
+/* function inferDomain(spellName: string, tools: Tool[]): string {
   const nameTokens = spellName.toLowerCase().split('-');
   const toolNames = tools.map((t) => t.name.toLowerCase()).join(' ');
 
@@ -298,193 +464,7 @@ function inferDomain(spellName: string, tools: Tool[]): string {
 
   return 'general';
 }
-
-/**
- * Generate concise "When to Use" section (SRP: use case generation only)
- */
-function generateUseCases(spellName: string, tools: Tool[], _domain: string): string {
-  const actionVerbs = extractActionVerbs(tools);
-  const keywords = spellName.split('-').filter((k) => k.length > 2);
-
-  let useCase = `Use for: ${keywords.join(', ')} operations`;
-
-  if (actionVerbs.length > 0) {
-    useCase += ` (${actionVerbs.slice(0, 5).join(', ')})`;
-  }
-
-  return useCase;
-}
-
-/**
- * Extract action verbs from tool names (SRP: verb extraction only)
- */
-function extractActionVerbs(tools: Tool[]): string[] {
-  const verbs = new Set<string>();
-  const commonVerbs = [
-    'create',
-    'read',
-    'update',
-    'delete',
-    'query',
-    'search',
-    'list',
-    'get',
-    'set',
-    'add',
-    'remove',
-    'fetch',
-    'send',
-    'execute',
-    'validate',
-  ];
-
-  for (const tool of tools) {
-    const parts = tool.name.toLowerCase().split(/[_-]/);
-    for (const part of parts) {
-      if (commonVerbs.includes(part)) {
-        verbs.add(part);
-      }
-    }
-  }
-
-  return Array.from(verbs);
-}
-
-/**
- * Generate compact tool list (one line per tool) (SRP: tool list formatting only)
- */
-function generateCompactToolList(tools: Tool[]): string {
-  let output = '';
-
-  // Group tools by prefix for organization
-  const groups = groupTools(tools);
-  const hasMultipleGroups = Object.keys(groups).length > 1;
-
-  for (const [category, categoryTools] of Object.entries(groups)) {
-    if (hasMultipleGroups && category !== 'General') {
-      output += `**${category}**:\n`;
-    }
-
-    for (const tool of categoryTools) {
-      // One line: name + brief purpose + params
-      const desc = tool.description ?? 'No description';
-      const shortDesc = desc.split('.')[0].substring(0, 60); // First sentence, max 60 chars
-
-      output += `**${tool.name}** - ${shortDesc}`;
-
-      // Add compact params
-      if (tool.inputSchema != null && typeof tool.inputSchema === 'object') {
-        const schema = tool.inputSchema as {
-          properties?: Record<string, unknown>;
-          required?: string[];
-        };
-        const required = schema.required ?? [];
-        if (required.length > 0) {
-          output += ` | Required: ${required.join(', ')}`;
-        }
-      }
-      output += '\n';
-    }
-
-    if (hasMultipleGroups) {
-      output += '\n';
-    }
-  }
-
-  return output;
-}
-
-/**
- * Generate 3-step workflow based on tool patterns (SRP: workflow generation only)
- */
-function generateWorkflow(tools: Tool[], _domain: string): string {
-  const toolNames = tools.map((t) => t.name.toLowerCase());
-
-  // Detect discovery tools (list, search, get, find)
-  const hasDiscovery = toolNames.some(
-    (n) => n.includes('list') || n.includes('search') || n.includes('find')
-  );
-
-  // Detect action tools (create, update, delete, execute)
-  const hasActions = toolNames.some(
-    (n) =>
-      n.includes('create') || n.includes('update') || n.includes('delete') || n.includes('execute')
-  );
-
-  // Detect validation tools
-  const hasValidation = toolNames.some(
-    (n) => n.includes('validate') || n.includes('verify') || n.includes('test')
-  );
-
-  // Build workflow
-  let workflow = '1. **Discovery**: ';
-  if (hasDiscovery) {
-    workflow += 'List/search available resources\n';
-  } else {
-    workflow += 'Identify target resource\n';
-  }
-
-  workflow += '2. **Action**: ';
-  if (hasActions) {
-    workflow += 'Execute operations (create/update/delete)\n';
-  } else {
-    workflow += 'Perform operations using available tools\n';
-  }
-
-  workflow += '3. **Verify**: ';
-  if (hasValidation) {
-    workflow += 'Validate results and handle errors';
-  } else {
-    workflow += 'Check operation results';
-  }
-
-  return workflow;
-}
-
-/**
- * Generate domain-specific best practices (top 3-5 items) (SRP: practices generation only)
- */
-function generateBestPractices(domain: string, tools: Tool[]): string {
-  const practices: string[] = [];
-
-  switch (domain) {
-    case 'database':
-      practices.push('✅ Use parameterized queries to prevent injection attacks');
-      practices.push('✅ Add LIMIT clauses for large result sets');
-      practices.push('⚠️ Validate table/column names before querying');
-      break;
-
-    case 'api':
-      practices.push('✅ Handle rate limits and retry with exponential backoff');
-      practices.push('✅ Set timeouts for all requests (avoid hanging)');
-      practices.push('⚠️ Validate API responses before using data');
-      break;
-
-    case 'filesystem':
-      practices.push('✅ Validate file paths to prevent directory traversal');
-      practices.push('✅ Check file permissions before operations');
-      practices.push('⚠️ Handle missing files gracefully');
-      break;
-
-    case 'search':
-      practices.push('✅ Start with broad queries, then narrow down');
-      practices.push('✅ Set appropriate result limits to avoid overload');
-      practices.push('⚠️ Handle empty results gracefully');
-      break;
-
-    default:
-      practices.push('✅ Validate inputs before calling tools');
-      practices.push('✅ Handle errors gracefully and provide clear feedback');
-      practices.push('⚠️ Choose the most specific tool for each task');
-  }
-
-  // Add tool-specific practice if many tools
-  if (tools.length > 5) {
-    practices.push(`💡 ${tools.length} tools available - read descriptions carefully`);
-  }
-
-  return practices.map((p) => `${p}\n`).join('');
-}
+*/
 
 /**
  * Group tools by common prefix or category

@@ -2,29 +2,58 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Test environment
-    environment: 'node',
+    // Use projects to separate unit and integration tests
+    projects: [
+      // Unit tests project
+      {
+        test: {
+          name: 'unit',
+          environment: 'node',
+          pool: 'forks',
+          execArgv: ['--expose-gc'],
+          // Include only .test.ts files, exclude integration and e2e
+          include: ['src/**/__tests__/**/*.test.ts', 'src/**/*.test.ts'],
+          exclude: [
+            '**/*.integration.test.ts',
+            '**/*.e2e.test.ts',
+            'node_modules',
+            'dist',
+            'tests/**',
+          ],
+          globals: true,
+          testTimeout: 10000, // Unit tests should be fast
+          hookTimeout: 10000,
+        },
+      },
+      // Integration tests project
+      {
+        test: {
+          name: 'integration',
+          environment: 'node',
+          pool: 'forks',
+          execArgv: ['--expose-gc'],
+          // Include .integration.test.ts and .e2e.test.ts files
+          include: [
+            'src/**/__tests__/**/*.integration.test.ts',
+            'src/**/*.integration.test.ts',
+            'src/**/*.e2e.test.ts',
+            'tests/**/*.integration.test.ts',
+          ],
+          globals: true,
+          testTimeout: 60000, // Integration tests can be slower
+          hookTimeout: 60000,
+          // Global setup/teardown for backup/restore
+          globalSetup: './src/cli/__tests__/helpers/global-setup-integration.ts',
+        },
+      },
+    ],
 
-    // Pool: Use 'forks' to enable execArgv and avoid VM memory leaks
-    // vmThreads/vmForks have inherent memory leak issues with ESM
-    pool: 'forks',
-    execArgv: ['--expose-gc'],
-
-    // Test file patterns
-    include: ['src/**/__tests__/**/*.ts', 'src/**/*.{test,spec}.ts', 'tests/**/*.{test,spec}.ts'],
-    exclude: ['node_modules', 'dist', 'tests/cross-platform/**'],
-
-    // Coverage configuration
+    // Coverage configuration (shared across projects)
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts'],
-      exclude: [
-        'src/**/*.d.ts',
-        'src/**/*.test.ts',
-        'src/**/__tests__/**',
-        'src/**/*.spec.ts',
-      ],
+      exclude: ['src/**/*.d.ts', 'src/**/*.test.ts', 'src/**/__tests__/**', 'src/**/*.spec.ts'],
       thresholds: {
         branches: 70,
         functions: 70,
@@ -33,15 +62,8 @@ export default defineConfig({
       },
     },
 
-    // Globals (makes test/expect/describe available without imports)
-    globals: true,
-
     // Output options
     silent: false,
     reporters: ['default', 'html'],
-
-    // Timeouts (increased for slower environments like containers/CI)
-    testTimeout: 30000,  // 30s for individual tests
-    hookTimeout: 30000,  // 30s for beforeEach/afterEach (gateway initialization can be slow)
   },
 });

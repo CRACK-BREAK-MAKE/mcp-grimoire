@@ -595,9 +595,9 @@ class TestOAuth2HTTP:
         mcp_url = f"http://localhost:{PORT_OAUTH2_HTTP}/mcp"
         
         # Step 1: Try to connect without token - should get HTTP 401
-        logger.info("\n" + "="*70)
+        logger.debug("=====================================================")
         logger.info("STEP 1: Initial request WITHOUT token → HTTP 401")
-        logger.info("="*70)
+        logger.debug("=====================================================")
         async with httpx.AsyncClient(timeout=10.0) as http_client:
             # Make initial MCP initialize request without auth
             response = await http_client.post(
@@ -620,9 +620,9 @@ class TestOAuth2HTTP:
             logger.info("✓ Got HTTP 401 Unauthorized (expected)")
             
             # Step 2: Extract resource_metadata from WWW-Authenticate header
-            logger.info("\n" + "="*70)
+            logger.debug("=====================================================")
             logger.info("STEP 2: Extract PRM URL from WWW-Authenticate header")
-            logger.info("="*70)
+            logger.debug("=====================================================")
             www_auth_header = response.headers.get("www-authenticate", "")
             logger.info(f"WWW-Authenticate: {www_auth_header}")
             assert www_auth_header.lower().startswith("bearer "), "Must have Bearer challenge"
@@ -635,9 +635,9 @@ class TestOAuth2HTTP:
             logger.info(f"✓ Discovered PRM URL: {prm_url}")
             
             # Step 3: Fetch PRM (PUBLIC - no authentication required per RFC 8414)
-            logger.info("\n" + "="*70)
+            logger.debug("=====================================================")
             logger.info("STEP 3: Fetch Protected Resource Metadata (PUBLIC endpoint)")
-            logger.info("="*70)
+            logger.debug("=====================================================")
             prm_response = await http_client.get(prm_url)
             assert prm_response.status_code == 200, f"PRM endpoint returned {prm_response.status_code}"
             prm = prm_response.json()
@@ -646,18 +646,18 @@ class TestOAuth2HTTP:
             logger.info(f"Scopes: {prm.get('scopes_supported')}")
             
             # Step 4: Discover Authorization Server from PRM
-            logger.info("\n" + "="*70)
+            logger.debug("=====================================================")
             logger.info("STEP 4: Discover Authorization Server from PRM")
-            logger.info("="*70)
+            logger.debug("=====================================================")
             as_urls = prm.get("authorization_servers", [])
             assert len(as_urls) > 0, "PRM must contain at least one authorization server"
             as_url = as_urls[0]
             logger.info(f"✓ Authorization Server: {as_url}")
             
             # Step 5: Fetch AS metadata
-            logger.info("\n" + "="*70)
+            logger.debug("=====================================================")
             logger.info("STEP 5: Fetch Authorization Server metadata")
-            logger.info("="*70)
+            logger.debug("=====================================================")
             as_metadata_url = f"{as_url}.well-known/oauth-authorization-server"
             logger.info(f"Fetching: {as_metadata_url}")
             as_response = await http_client.get(as_metadata_url)
@@ -670,9 +670,9 @@ class TestOAuth2HTTP:
             token_endpoint = as_metadata["token_endpoint"]
             
             # Step 6: Request access token using client credentials
-            logger.info("\n" + "="*70)
+            logger.debug("=====================================================")
             logger.info("STEP 6: Request access token (Client Credentials grant)")
-            logger.info("="*70)
+            logger.debug("=====================================================")
             logger.info(f"Client ID: {test_credentials['oauth2_client_id']}")
             logger.info(f"Requesting scopes: mcp:tools:read mcp:tools:write")
             token_response = await http_client.post(
@@ -694,9 +694,9 @@ class TestOAuth2HTTP:
             assert access_token
         
         # Step 7: Use MCP Client with Bearer token to connect and test tools
-        logger.info("\n" + "="*70)
+        logger.debug("=====================================================")
         logger.info("STEP 7: Connect with MCP Client using Bearer token")
-        logger.info("="*70)
+        logger.debug("=====================================================")
         transport = StreamableHttpTransport(
             mcp_url,
             headers={"Authorization": f"Bearer {access_token}"}
@@ -734,9 +734,9 @@ class TestOAuth2HTTP:
             assert "results" in result.content[0].text or "query" in result.content[0].text
             logger.info(f"✓ search_emails: {result.content[0].text}")
         
-        logger.info("\n" + "="*70)
+        logger.debug("=====================================================")
         logger.info("✅ OAuth2 Client Credentials flow completed successfully!")
-        logger.info("="*70)
+        logger.debug("=====================================================")
 
     @pytest.mark.asyncio
     async def test_oauth2_invalid_token_rejected(
@@ -754,9 +754,9 @@ class TestOAuth2HTTP:
         mcp_url = f"http://localhost:{PORT_OAUTH2_HTTP}/mcp"
         
         # Test 1: Fake token
-        logger.info("\n" + "="*70)
+        logger.debug("=====================================================")
         logger.info("TEST: Invalid token should be rejected")
-        logger.info("="*70)
+        logger.debug("=====================================================")
         fake_token = "fake_invalid_token_12345"
         transport_fake = StreamableHttpTransport(
             mcp_url,
@@ -794,9 +794,9 @@ class TestOAuth2HTTP:
         
         logger.info(f"✓ Empty token rejected: {type(exc_info.value).__name__}")
         
-        logger.info("\n" + "="*70)
+        logger.debug("=====================================================")
         logger.info("✅ All invalid tokens correctly rejected!")
-        logger.info("="*70)
+        logger.debug("=====================================================")
 
     @pytest.mark.asyncio
     async def test_oauth2_client_credentials_flow(
@@ -917,9 +917,9 @@ class TestOAuth2HTTP:
             assert "results" in result.content[0].text or "query" in result.content[0].text
             logger.info("✅ Step 7: All 3 domain tools validated")
         
-        logger.info("\n" + "="*70)
+        logger.debug("=====================================================")
         logger.info("✅ Complete OAuth2 Client Credentials Flow Validated!")
-        logger.info("="*70)
+        logger.debug("=====================================================")
 
     @pytest.mark.asyncio
     async def test_without_token(self, oauth2_http_server) -> None:

@@ -84,9 +84,9 @@ async def test_without_auth() -> None:
 
 
 if __name__ == "__main__":
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
     logger.info("Testing OAuth2 HTTP Client")
-    logger.info("=" * 60)
+    logger.debug("=====================================================")
 
     logger.info("\nOAuth2 authentication requires browser-based flow.")
     logger.info("For testing, you can:")
