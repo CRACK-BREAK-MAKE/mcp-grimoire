@@ -104,8 +104,13 @@ src/presentation/__tests__/
 └── gateway-parallel-servers.e2e.test.ts
 
 helpers/
-├── gateway-test-helper.ts (NEW)
-└── spell-creator.ts (NEW)
+├── gateway-test-helper.ts (NEW - Gateway test utilities)
+└── gateway-test-path-manager.ts (NEW - Path isolation for gateway tests)
+
+cli/__tests__/helpers/ (EXISTING - Reusable for CLI and Gateway tests)
+├── test-path-manager.ts (Path isolation utilities)
+├── test-server-manager.ts (FastMCP server management)
+└── spell-validator.ts (Spell file validation)
 ```
 
 ### Naming Convention
@@ -116,6 +121,147 @@ helpers/
 - `gateway-not-found.e2e.test.ts` - No matching spells found
 - `gateway-turn-based-cleanup.e2e.test.ts` - 5-turn inactivity cleanup
 - `gateway-parallel-servers.e2e.test.ts` - Multiple concurrent servers
+
+---
+
+## Test Isolation Strategy - Path Management
+
+### Problem
+
+Gateway tests need isolated spell directories to:
+
+1. Prevent pollution of user's `~/.grimoire` directory
+2. Avoid test collisions when running in parallel
+3. Ensure clean state for each test
+4. Make cleanup automatic and reliable
+
+### Solution - Test Path Manager Pattern (from CLI tests)
+
+Following the successful pattern from CLI integration tests, we use `GRIMOIRE_HOME` environment variable override:
+
+```typescript
+// From src/cli/__tests__/helpers/test-path-manager.ts
+export function setupTestGrimoireDir(testName: string): string {
+  // Create isolated test directory
+  const testDir = join(process.cwd(), '.test-grimoire', testName);
+
+  // Override GRIMOIRE_HOME to point to test directory
+  process.env.GRIMOIRE_HOME = testDir;
+
+  // Reset path cache to pick up new environment
+  resetPathsCache();
+
+  return testDir;
+}
+
+export async function cleanupTestGrimoireDir(testDir: string): Promise<void> {
+  // Remove test directory
+  await rm(testDir, { recursive: true, force: true });
+
+  // Restore default behavior
+  delete process.env.GRIMOIRE_HOME;
+  resetPathsCache();
+}
+```
+
+### Benefits
+
+✅ **Isolation**: Each test gets `.test-grimoire/<test-name>/` directory
+✅ **No Collisions**: Unique test names = unique directories
+✅ **Automatic Cleanup**: `afterAll` removes test artifacts
+✅ **Real Code Paths**: Tests use production path resolution logic
+✅ **Parallel Safe**: Tests can run simultaneously without interference
+
+### Integration with Gateway Tests
+
+Gateway tests will use the same pattern:
+
+```typescript
+import {
+  setupTestGrimoireDir,
+  cleanupTestGrimoireDir,
+} from '../cli/__tests__/helpers/test-path-manager';
+
+describe('Gateway E2E - Basic Auth HTTP', () => {
+  let grimoireDir: string;
+
+  beforeAll(async () => {
+    // Setup isolated directory
+    grimoireDir = setupTestGrimoireDir('gateway-basic-auth-http');
+
+    // Spell files will be created in:
+    // .test-grimoire/gateway-basic-auth-http/spell.yaml
+  });
+
+  afterAll(async () => {
+    // Complete cleanup
+    await cleanupTestGrimoireDir(grimoireDir);
+  });
+});
+```
+
+### Directory Structure During Tests
+
+```
+workspace/
+├── .test-grimoire/               ← Test isolation root (gitignored)
+│   ├── gateway-basic-auth-http/  ← Gateway test 1
+│   │   └── project-mgmt.spell.yaml
+│   ├── gateway-api-key-http/     ← Gateway test 2
+│   │   └── weather-api.spell.yaml
+│   ├── gateway-stdio-capjs/      ← Gateway test 3
+│   │   └── cds-mcp.spell.yaml
+│   ├── no-auth-http/             ← CLI test 1 (existing)
+│   └── api-key-http/             ← CLI test 2 (existing)
+└── src/
+```
+
+### Gateway-Specific Path Considerations
+
+Gateway tests have additional path requirements:
+
+1. **Spell Indexing**: Gateway watches spell directory for changes
+2. **Multiple Spells**: Some tests need multiple spell files in same directory
+3. **Spell Discovery**: Gateway needs to discover and index all spells
+
+Enhanced helper for gateway tests:
+
+```typescript
+// helpers/gateway-test-path-manager.ts (NEW)
+import {
+  setupTestGrimoireDir,
+  cleanupTestGrimoireDir,
+} from '../../cli/__tests__/helpers/test-path-manager';
+
+/**
+ * Setup gateway test directory with multiple spell support
+ */
+export async function setupGatewayTestDir(testName: string): Promise<string> {
+  const testDir = setupTestGrimoireDir(`gateway-${testName}`);
+
+  // Ensure directory exists (gateway watcher needs it)
+  const { ensureDirectories } = await import('../../../utils/paths');
+  await ensureDirectories();
+
+  return testDir;
+}
+
+/**
+ * Cleanup with gateway-specific considerations
+ */
+export async function cleanupGatewayTestDir(
+  gateway: GrimoireServer | null,
+  testDir: string
+): Promise<void> {
+  // Shutdown gateway first (stops watchers)
+  if (gateway) {
+    await gateway.shutdown();
+  }
+
+  // Then cleanup directory
+  await cleanupTestGrimoireDir(testDir);
+}
+```
 
 ---
 
@@ -157,12 +303,14 @@ helpers/
  * Tests high-confidence intent resolution (≥0.85) with Basic Auth HTTP server
  *
  * FLOW:
- * 1. Start FastMCP server (Basic Auth HTTP)
- * 2. Create spell file using CLI
- * 3. Start Gateway (indexes spell)
- * 4. Call resolve_intent with matching query
- * 5. Validate auto-spawn behavior (high confidence)
- * 6. Verify tools available
+ * 1. Setup isolated test directory (.test-grimoire/gateway-basic-auth-http/)
+ * 2. Start FastMCP server (Basic Auth HTTP)
+ * 3. Create spell file using CLI (in isolated directory)
+ * 4. Start Gateway (indexes spell from test directory)
+ * 5. Call resolve_intent with matching query
+ * 6. Validate auto-spawn behavior (high confidence)
+ * 7. Verify tools available
+ * 8. Cleanup: Stop gateway, stop server, remove test directory
  *
  * MCP SERVER:
  * - Server: servers.basic_auth.http_server
@@ -170,6 +318,12 @@ helpers/
  * - Transport: HTTP
  * - Auth: Basic (testuser/testpass123)
  * - Tools: create_project, add_task, get_project_status
+ *
+ * TEST ISOLATION:
+ * - Uses GRIMOIRE_HOME override to point to .test-grimoire/gateway-basic-auth-http/
+ * - Prevents pollution of ~/.grimoire
+ * - Automatic cleanup in afterAll
+ * - Parallel-safe (unique directory per test)
  *
  * NO MOCKS - Real server, real spell, real gateway
  */
@@ -179,7 +333,10 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import {
+  setupTestGrimoireDir,
+  cleanupTestGrimoireDir,
+} from '../../cli/__tests__/helpers/test-path-manager';
 import { GrimoireServer } from '../gateway';
 import {
   startFastMCPServer,
@@ -201,14 +358,15 @@ describe('Gateway E2E - Basic Auth HTTP', () => {
   let spellFilePath: string;
 
   beforeAll(async () => {
-    // ARRANGE: Setup environment
-    grimoireDir = getSpellDirectory();
+    // ARRANGE: Setup isolated test directory
+    grimoireDir = setupTestGrimoireDir('gateway-basic-auth-http');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
 
+    // Ensure test directory exists
     const { ensureDirectories } = await import('../../utils/paths');
     await ensureDirectories();
 
-    // Clean up previous test spell
+    // Clean up previous test spell if exists
     if (existsSync(spellFilePath)) {
       await rm(spellFilePath);
     }
@@ -218,7 +376,7 @@ describe('Gateway E2E - Basic Auth HTTP', () => {
     serverProcess = await startFastMCPServer('servers.basic_auth.http_server', serverPort);
     console.log(`[TEST] ✓ Server started on port ${serverPort}`);
 
-    // Create spell file using CLI
+    // Create spell file using CLI (will use GRIMOIRE_HOME from setupTestGrimoireDir)
     console.log(`[TEST] Creating spell file: ${testSpellName}...`);
     const options: CreateOptions = {
       name: testSpellName,
@@ -232,21 +390,21 @@ describe('Gateway E2E - Basic Auth HTTP', () => {
     };
 
     await createCommand(options);
-    expect(existsSync(spellFilePath), 'Spell file should be created').toBe(true);
+    expect(existsSync(spellFilePath), 'Spell file should be created in test directory').toBe(true);
     console.log(`[TEST] ✓ Spell file created: ${spellFilePath}`);
 
     // Start Gateway and wait for spell indexing
-    console.log(`[TEST] Starting Gateway...`);
+    console.log(`[TEST] Starting Gateway (will watch test directory)...`);
     gateway = new GrimoireServer();
     await gateway.start();
 
-    // Wait for spell watcher to index the file
+    // Wait for spell watcher to index the file from test directory
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log(`[TEST] ✓ Gateway started and spell indexed`);
+    console.log(`[TEST] ✓ Gateway started and spell indexed from test directory`);
   }, 60000);
 
   afterAll(async () => {
-    // CLEANUP: Stop gateway and server
+    // CLEANUP: Stop gateway, stop server, remove test directory
     console.log(`[TEST] Cleaning up...`);
 
     if (gateway) {
@@ -257,10 +415,9 @@ describe('Gateway E2E - Basic Auth HTTP', () => {
     await stopServer(serverProcess, serverPort, 'basic_auth_http_server');
     console.log(`[TEST] ✓ Server stopped`);
 
-    if (existsSync(spellFilePath)) {
-      await rm(spellFilePath);
-      console.log(`[TEST] ✓ Spell file deleted`);
-    }
+    // Cleanup test directory (removes spell file and directory)
+    await cleanupTestGrimoireDir(grimoireDir);
+    console.log(`[TEST] ✓ Test directory cleaned: ${grimoireDir}`);
   }, 30000);
 
   it('should auto-spawn server via resolve_intent with high confidence', async () => {
@@ -309,7 +466,49 @@ describe('Gateway E2E - Basic Auth HTTP', () => {
 
 ## Key Differences from Demo Test
 
-### 1. **Strict Naming Convention**
+### 1. **Test Isolation with Path Management**
+
+```typescript
+// ❌ OLD: Uses real ~/.grimoire (pollutes user directory)
+grimoireDir = getSpellDirectory(); // ~/.grimoire
+spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
+
+// ✅ NEW: Uses isolated test directory
+grimoireDir = setupTestGrimoireDir('gateway-basic-auth-http');
+spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
+// Creates: .test-grimoire/gateway-basic-auth-http/
+// Sets GRIMOIRE_HOME env var
+// All paths now resolve to test directory
+```
+
+**Benefits:**
+
+- ✅ No pollution of `~/.grimoire`
+- ✅ Tests can run in parallel (unique directories)
+- ✅ Automatic cleanup removes all test artifacts
+- ✅ Tests use real production path resolution code
+
+### 2. **Complete Cleanup with Path Reset**
+
+```typescript
+// ❌ OLD: Manual cleanup, directory remains
+afterAll(async () => {
+  await gateway.shutdown();
+  await stopServer(serverProcess, serverPort);
+  if (existsSync(spellFilePath)) await rm(spellFilePath);
+  // Directory still exists, GRIMOIRE_HOME still set
+});
+
+// ✅ NEW: Complete cleanup with path reset
+afterAll(async () => {
+  await gateway.shutdown();
+  await stopServer(serverProcess, serverPort, 'basic_auth_http_server');
+  await cleanupTestGrimoireDir(grimoireDir);
+  // Removes directory, unsets GRIMOIRE_HOME, resets path cache
+}, 30000);
+```
+
+### 3. **Strict Naming Convention**
 
 ```typescript
 // ❌ OLD: Generic names cause collisions
@@ -340,23 +539,7 @@ const response = await gateway.handleResolveIntentCall({ query });
 const tools = gateway.getAvailableTools();
 ```
 
-### 4. **Proper Cleanup**
-
-```typescript
-// ❌ OLD: Incomplete cleanup
-afterAll(async () => {
-  await stopServer(serverProcess);
-});
-
-// ✅ NEW: Complete cleanup (gateway + server + spell)
-afterAll(async () => {
-  await gateway.shutdown();
-  await stopServer(serverProcess, serverPort, 'basic_auth_http_server');
-  if (existsSync(spellFilePath)) await rm(spellFilePath);
-}, 30000);
-```
-
-### 5. **Tool Validation**
+### 4. **Tool Validation**
 
 ```typescript
 // ❌ OLD: Generic validation
@@ -693,6 +876,37 @@ export function assertTier1Response(
 
 ## Common Pitfalls to Avoid
 
+### ❌ Don't: Use real ~/.grimoire directory
+
+```typescript
+grimoireDir = getSpellDirectory(); // Pollutes user's directory!
+```
+
+### ✅ Do: Use isolated test directory
+
+```typescript
+grimoireDir = setupTestGrimoireDir('gateway-test-name'); // Isolated!
+```
+
+### ❌ Don't: Forget to reset environment after test
+
+```typescript
+afterAll(async () => {
+  await gateway.shutdown();
+  if (existsSync(spellFilePath)) await rm(spellFilePath);
+  // GRIMOIRE_HOME still set! Path cache not reset!
+});
+```
+
+### ✅ Do: Use cleanup helper
+
+```typescript
+afterAll(async () => {
+  await gateway.shutdown();
+  await cleanupTestGrimoireDir(grimoireDir); // Complete cleanup!
+}, 30000);
+```
+
 ### ❌ Don't: Reuse ports across tests
 
 ```typescript
@@ -732,12 +946,12 @@ await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for indexing
 await gateway.handleResolveIntentCall({ query }); // SUCCESS
 ```
 
-### ❌ Don't: Skip cleanup
+### ❌ Don't: Skip cleanup or do partial cleanup
 
 ```typescript
 afterAll(async () => {
   await gateway.shutdown();
-  // Missing: stopServer, rm spellFile
+  // Missing: stopServer, rm spellFile, cleanup test directory
 });
 ```
 
@@ -747,7 +961,7 @@ afterAll(async () => {
 afterAll(async () => {
   await gateway.shutdown();
   await stopServer(serverProcess, serverPort, 'server');
-  if (existsSync(spellFilePath)) await rm(spellFilePath);
+  await cleanupTestGrimoireDir(grimoireDir); // Removes everything
 }, 30000);
 ```
 
@@ -767,6 +981,272 @@ afterAll(async () => {
 | OAuth2 HTTP            | send_email, get_inbox, search_emails                    | "send email get inbox"             |
 | CAP.js stdio           | search_model, search_docs                               | "search model docs for cds"        |
 | UI5 stdio              | get_guidelines, get_api_reference, get_project_info     | "get ui5 guidelines api reference" |
+
+---
+
+## Lessons from CLI Integration Tests (Applied to Gateway Tests)
+
+### Overview
+
+The CLI integration tests (19 tests, 69 test cases, all passing) established best practices that directly apply to gateway testing:
+
+### 1. **Test Isolation via GRIMOIRE_HOME Override**
+
+**Pattern:**
+
+```typescript
+// Setup: Override GRIMOIRE_HOME
+grimoireDir = setupTestGrimoireDir('test-name');
+// Result: All paths resolve to .test-grimoire/test-name/
+
+// Cleanup: Remove directory and reset environment
+await cleanupTestGrimoireDir(grimoireDir);
+```
+
+**Why It Works:**
+
+- ✅ Uses real production code (`getSpellDirectory()`, `getEnvFilePath()`)
+- ✅ No mocks needed for path resolution
+- ✅ Parallel test execution without collisions
+- ✅ Clean slate for each test
+
+**Applied to Gateway:**
+
+- Gateway's spell watcher monitors `GRIMOIRE_HOME` directory
+- Gateway's spell indexer reads from test directory
+- All spell files created in isolated test directory
+- Gateway tests inherit same isolation benefits
+
+### 2. **Comprehensive Cleanup Strategy**
+
+**CLI Pattern (Successful):**
+
+```typescript
+afterAll(async () => {
+  await stopServer(serverProcess, serverPort, 'server_name');
+  await cleanupTestGrimoireDir(grimoireDir);
+  // Automatically:
+  // - Removes .test-grimoire/test-name/ directory
+  // - Unsets GRIMOIRE_HOME
+  // - Resets path cache via resetPathsCache()
+}, 30000);
+```
+
+**Gateway Enhancement:**
+
+```typescript
+afterAll(async () => {
+  // 1. Shutdown gateway (stops watchers, cleans up processes)
+  if (gateway) await gateway.shutdown();
+
+  // 2. Stop test servers
+  await stopServer(serverProcess, serverPort, 'server_name');
+
+  // 3. Complete directory cleanup
+  await cleanupTestGrimoireDir(grimoireDir);
+}, 30000);
+```
+
+**Critical Order:**
+
+1. Gateway shutdown first (releases file watchers)
+2. Server shutdown second (releases ports)
+3. Directory cleanup last (removes all artifacts)
+
+### 3. **Real Servers, No Mocks**
+
+**Philosophy:**
+
+```
+CLI Tests: Real FastMCP servers → Real spell files → Real probe
+Gateway Tests: Real FastMCP servers → Real spell files → Real gateway → Real spawning
+```
+
+**Benefits:**
+
+- Tests catch real integration issues
+- Tests validate actual auth flows
+- Tests verify complete user experience
+- High confidence in production behavior
+
+### 4. **Unique Test Names Prevent Collisions**
+
+**Pattern from CLI Tests:**
+
+```typescript
+// Each test gets unique identifier
+setupTestGrimoireDir('no-auth-http')       → .test-grimoire/no-auth-http/
+setupTestGrimoireDir('basic-auth-http')    → .test-grimoire/basic-auth-http/
+setupTestGrimoireDir('api-key-sse')        → .test-grimoire/api-key-sse/
+```
+
+**Applied to Gateway Tests:**
+
+```typescript
+// Gateway tests follow same pattern
+setupTestGrimoireDir('gateway-basic-auth-http')     → .test-grimoire/gateway-basic-auth-http/
+setupTestGrimoireDir('gateway-api-key-sse')         → .test-grimoire/gateway-api-key-sse/
+setupTestGrimoireDir('gateway-turn-based-cleanup')  → .test-grimoire/gateway-turn-based-cleanup/
+```
+
+**Result:** All tests can run in parallel without interference
+
+### 5. **DRY with Reusable Helpers**
+
+**Shared Test Infrastructure:**
+
+```typescript
+// CLI tests created, gateway tests reuse:
+src/cli/__tests__/helpers/
+├── test-path-manager.ts        ← Shared by CLI + Gateway
+├── test-server-manager.ts      ← Shared by CLI + Gateway
+└── spell-validator.ts          ← Shared by CLI + Gateway
+
+// Gateway-specific additions:
+src/presentation/__tests__/helpers/
+├── gateway-test-helper.ts      ← Gateway-specific utilities
+└── gateway-test-path-manager.ts ← Gateway path enhancements (optional)
+```
+
+**Benefits:**
+
+- No code duplication
+- Consistent test patterns
+- Easy maintenance
+- Single source of truth
+
+### 6. **Production Code Path Testing**
+
+**Key Insight from CLI Tests:**
+
+The test isolation uses `GRIMOIRE_HOME` override, which is a **real feature** of the production code:
+
+```typescript
+// src/utils/paths.ts
+export function getSpellDirectory(): string {
+  const envPath = process.env.GRIMOIRE_HOME;
+  if (envPath != null && envPath !== '') {
+    return envPath; // Tests use this path
+  }
+  return join(homedir(), '.grimoire'); // Production uses this path
+}
+```
+
+**Why This Matters:**
+
+- Tests exercise real production path resolution logic
+- Tests validate GRIMOIRE_HOME feature works correctly
+- No test-only code paths needed
+- Users can use GRIMOIRE_HOME env var if needed (bonus feature!)
+
+**Applied to Gateway:**
+
+- Gateway's spell watcher uses `getSpellDirectory()`
+- Gateway's spell indexer uses same path resolution
+- Tests validate gateway works with custom GRIMOIRE_HOME
+- Gateway tests validate production code paths
+
+### 7. **Atomic Test Operations**
+
+**CLI Pattern:**
+
+```typescript
+beforeAll(async () => {
+  // 1. Setup test directory
+  grimoireDir = setupTestGrimoireDir('test-name');
+
+  // 2. Start server
+  serverProcess = await startFastMCPServer('server', port);
+
+  // 3. Create spell (uses test directory automatically)
+  await createCommand(options);
+
+  // Order matters! Each depends on previous step
+}, 60000);
+```
+
+**Gateway Pattern:**
+
+```typescript
+beforeAll(async () => {
+  // 1. Setup test directory (GRIMOIRE_HOME set)
+  grimoireDir = setupTestGrimoireDir('gateway-test-name');
+
+  // 2. Start server
+  serverProcess = await startFastMCPServer('server', port);
+
+  // 3. Create spell (goes to test directory via GRIMOIRE_HOME)
+  await createCommand(options);
+
+  // 4. Start gateway (watches test directory via GRIMOIRE_HOME)
+  gateway = new GrimoireServer();
+  await gateway.start();
+
+  // 5. Wait for spell indexing
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+}, 60000);
+```
+
+**Key Difference:** Gateway needs indexing wait after start
+
+### 8. **Statistics from CLI Tests**
+
+**Metrics (as of commit 2e74243):**
+
+- 19 test files
+- 69 test cases
+- 100% pass rate
+- Covers 11 server types (9 HTTP/SSE + 2 stdio)
+- Tests all auth patterns (Basic, Bearer, Custom Headers, None, OAuth2)
+- Average test time: ~2-5 seconds per test
+- Total suite time: ~8 seconds (parallel execution)
+
+**Implications for Gateway Tests:**
+
+- Expect similar test counts (15+ tests)
+- Similar execution times (gateway adds spawning overhead)
+- Parallel execution should work (unique directories)
+- Same reliability standards (0 flaky tests)
+
+### 9. **Pre-commit Hook Integration**
+
+**CLI Tests:**
+All 19 CLI tests run in pre-commit hook, ensuring:
+
+- No broken tests reach main branch
+- Path isolation works correctly
+- Cleanup is complete (no leftover files)
+
+**Gateway Tests:**
+Should integrate same way:
+
+```json
+// package.json
+{
+  "scripts": {
+    "test:cli": "vitest run src/cli/__tests__/",
+    "test:gateway": "vitest run src/presentation/__tests__/",
+    "test:integration": "vitest run src/cli/__tests__/ src/presentation/__tests__/"
+  }
+}
+```
+
+### Summary
+
+The CLI integration tests proved that:
+
+1. ✅ Path isolation via `GRIMOIRE_HOME` works perfectly
+2. ✅ No mocks needed when using real test directories
+3. ✅ Tests can run in parallel without collisions
+4. ✅ Cleanup is reliable and complete
+5. ✅ Pattern is maintainable and readable
+
+Gateway tests inherit all these benefits plus additional validation of:
+
+- Intent resolution correctness
+- Server spawning reliability
+- Tool routing accuracy
+- Turn-based cleanup functionality
 
 ---
 
