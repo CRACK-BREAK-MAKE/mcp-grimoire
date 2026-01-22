@@ -51,25 +51,27 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { rm } from 'fs/promises';
 import { getSpellDirectory } from '../../utils/paths';
 import { createCommand } from '../commands/create';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 
 describe('CLI create - Input Validation', () => {
+  let testGrimoireDir: string;
   let grimoireDir: string;
-  const createdFiles: string[] = [];
 
   beforeAll(async () => {
+    // Setup isolated test directory
+    testGrimoireDir = await setupTestGrimoireDir('input-validation');
     grimoireDir = getSpellDirectory();
+
+    // Ensure test directory structure exists
     const { ensureDirectories } = await import('../../utils/paths');
     await ensureDirectories();
   });
 
   afterAll(async () => {
-    // Clean up any created test files
-    for (const file of createdFiles) {
-      if (existsSync(file)) await rm(file);
-    }
+    // Cleanup test directory and restore defaults
+    await cleanupTestGrimoireDir(testGrimoireDir);
   });
 
   describe('Spell Name Validation', () => {
@@ -278,8 +280,6 @@ describe('CLI create - Input Validation', () => {
       const testSpellName = 'test-valid-http';
       const spellPath = join(grimoireDir, `${testSpellName}.spell.yaml`);
 
-      createdFiles.push(spellPath);
-
       // ACT: Should succeed
       await createCommand({
         name: testSpellName,
@@ -289,16 +289,15 @@ describe('CLI create - Input Validation', () => {
         interactive: false,
       });
 
-      // ASSERT: Spell file created
+      // ASSERT: Spell file created in isolated test directory
       expect(existsSync(spellPath)).toBe(true);
+      expect(spellPath).toContain('.test-grimoire');
     });
 
     it('should accept valid HTTPS URL', async () => {
       // ARRANGE: Valid HTTPS URL (acceptance test)
       const testSpellName = 'test-valid-https';
       const spellPath = join(grimoireDir, `${testSpellName}.spell.yaml`);
-
-      createdFiles.push(spellPath);
 
       // ACT: Should succeed
       await createCommand({
@@ -309,8 +308,9 @@ describe('CLI create - Input Validation', () => {
         interactive: false,
       });
 
-      // ASSERT: Spell file created
+      // ASSERT: Spell file created in isolated test directory
       expect(existsSync(spellPath)).toBe(true);
+      expect(spellPath).toContain('.test-grimoire');
     });
   });
 

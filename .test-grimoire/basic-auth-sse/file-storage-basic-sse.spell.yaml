@@ -1,0 +1,80 @@
+name: file-storage-basic-sse
+version: 1.0.0
+description: >+
+  File Storage Service v1.0 v2.14.3 MCP server (SSE transport)
+
+
+  Provides 3 tools for upload, list, delete operations.
+
+
+  ## Available Tools
+
+
+  ### upload
+
+
+  - **upload_file**: Upload a file to cloud storage with metadata.
+
+
+  Args:
+      filename: Name of the file to upload
+      size_mb: File size in megabytes
+      folder: Destination folder path (default: root "/")
+
+  Returns:
+      Dictionary with upload status, file ID, and storage details (Required: filename, size_mb)
+
+  ### list
+
+
+  - **list_files**: List all files in a specific folder with sorting options.
+
+
+  Args:
+      folder: Folder path to list files from (default: root "/")
+      sort_by: Sort criterion (name, size, date) 
+
+  Returns:
+      Dictionary with list of files and folder metadata
+
+  ### delete
+
+
+  - **delete_file**: Delete or move a file to trash.
+
+
+  Args:
+      file_id: Unique identifier of the file to delete
+      permanent: If True, permanently delete; if False, move to trash
+
+  Returns:
+      Dictionary with deletion status and details (Required: file_id)
+
+keywords:
+  - file
+  - storage
+  - basic
+  - sse
+  - upload
+  - list
+  - files
+  - delete
+server:
+  transport: sse
+  url: http://localhost:8001/sse
+  auth:
+    type: basic
+    username: ${FILE_STORAGE_BASIC_SSE__API_USERNAME}
+    password: ${FILE_STORAGE_BASIC_SSE__API_PASSWORD}
+steering: |
+  # File Storage Service v1.0 (v2.14.3) - When to Use
+
+  Use when user needs: file, storage, basic, sse operations
+
+  **Available Tools (3)**:
+
+  **upload**: upload_file
+
+  **list**: list_files
+
+  **delete**: delete_file

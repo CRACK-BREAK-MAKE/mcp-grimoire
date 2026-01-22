@@ -1,6 +1,7 @@
-# 14. Environment Variable Resolution with .env File
+# 15. Environment Variable Resolution with .env File and GRIMOIRE_HOME Override
 
 Date: 2026-01-19
+Updated: 2026-01-22 (Added GRIMOIRE_HOME override capability)
 
 ## Status
 
@@ -654,3 +655,194 @@ this.watcher = watch(this.envPath, {
    - `.env.development`, `.env.production`
    - Environment switching
    - Per-environment spell configs
+
+---
+
+## Update (2026-01-22): GRIMOIRE_HOME Override Capability
+
+### Additional Context
+
+During test development, we identified that all integration tests were writing to the user's real `~/.grimoire/` directory, causing:
+
+- ❌ Pollution of production directory with test data
+- ❌ Test isolation issues (tests share same directory)
+- ❌ Cleanup failures leave test artifacts in production location
+- ❌ Parallel test execution risks (port conflicts, file collisions)
+- ❌ CI/CD environments may not have home directory access
+
+### Decision Extension
+
+Add support for **`GRIMOIRE_HOME` environment variable** to override the base grimoire directory location.
+
+**Default Behavior (Production)**:
+
+```bash
+# No GRIMOIRE_HOME set → uses ~/.grimoire/
+~/.grimoire/
+  ├── .env
+  ├── embeddings.msgpack
+  └── *.spell.yaml
+```
+
+**Override Behavior (Testing/Custom)**:
+
+```bash
+# GRIMOIRE_HOME=/workspace/.test-grimoire → uses custom location
+export GRIMOIRE_HOME=/workspace/.test-grimoire
+/workspace/.test-grimoire/
+  ├── .env
+  ├── embeddings.msgpack
+  └── *.spell.yaml
+```
+
+### Implementation
+
+**Path Resolution (`src/utils/paths.ts`)**:
+
+```typescript
+function getPaths(): EnvPaths {
+  if (syncPaths != null) return syncPaths;
+
+  // Check for GRIMOIRE_HOME environment variable override
+  const overrideDir = process.env.GRIMOIRE_HOME;
+
+  const grimoireDir = overrideDir
+    ? resolve(overrideDir) // Use absolute path from override
+    : join(homedir(), '.grimoire'); // Default: ~/.grimoire
+
+  return {
+    config: grimoireDir,
+    cache: grimoireDir,
+    log: grimoireDir,
+    data: grimoireDir,
+    temp: overrideDir
+      ? join(grimoireDir, 'tmp') // Isolated temp for tests
+      : join(tmpdir(), 'grimoire'), // System temp for production
+  };
+}
+
+// New function for tests to reset cache after setting GRIMOIRE_HOME
+export function resetPathsCache(): void {
+  syncPaths = null;
+  pathsCache = null;
+}
+```
+
+**Test Helper (`src/cli/__tests__/helpers/test-path-manager.ts`)**:
+
+```typescript
+export async function setupTestGrimoireDir(testName: string): Promise<string> {
+  const testDir = join(process.cwd(), '.test-grimoire', testName);
+  process.env.GRIMOIRE_HOME = testDir;
+  resetPathsCache(); // Pick up new environment variable
+  await mkdir(testDir, { recursive: true });
+  return testDir;
+}
+
+export async function cleanupTestGrimoireDir(testDir: string): Promise<void> {
+  await rm(testDir, { recursive: true, force: true });
+  delete process.env.GRIMOIRE_HOME;
+  resetPathsCache(); // Restore default behavior
+}
+```
+
+**Test Usage**:
+
+```typescript
+describe('CLI Test', () => {
+  let testGrimoireDir: string;
+
+  beforeAll(async () => {
+    testGrimoireDir = await setupTestGrimoireDir('my-test');
+    // All grimoire operations now use /workspace/.test-grimoire/my-test
+  });
+
+  afterAll(async () => {
+    await cleanupTestGrimoireDir(testGrimoireDir);
+    // Directory cleaned up, GRIMOIRE_HOME unset
+  });
+});
+```
+
+### Affected Components (No Changes Needed)
+
+All components automatically respect `GRIMOIRE_HOME` because they use `PATHS`:
+
+1. ✅ **Spell Files** - `SpellDiscovery` uses `getSpellDirectory()`
+2. ✅ **Embedding Cache** - `EmbeddingStorage` uses `getEmbeddingCachePath()`
+3. ✅ **Environment Variables** - `EnvManager` uses `getSpellDirectory()/.env`
+4. ✅ **Spell Watcher** - Uses `SpellDiscovery.getSpellDirectory()`
+5. ✅ **Directory Creation** - `ensureDirectories()` uses `PATHS.config`
+
+### Consequences of GRIMOIRE_HOME
+
+**Positive**:
+
+- ✅ Test isolation - Each test uses unique directory
+- ✅ Production safety - Default behavior unchanged
+- ✅ CI/CD compatible - Works without home directory
+- ✅ Parallel execution - Tests don't collide
+- ✅ Zero component changes - All use `PATHS` already
+
+**Negative**:
+
+- ⚠️ Cache invalidation - Must call `resetPathsCache()` after setting
+- ⚠️ Documentation - Need to explain to advanced users
+- ⚠️ Test discipline - Tests must cleanup properly
+
+**Neutral**:
+
+- Environment variable is **optional** - Production users don't need to know about it
+- Only used for testing and custom installations
+- Follows same pattern as `HOME`, `TMPDIR`, etc.
+
+### Use Cases
+
+**1. Integration Testing**:
+
+```bash
+export GRIMOIRE_HOME=./.test-grimoire/test-123
+npm test  # Uses isolated directory
+```
+
+**2. Custom Installation**:
+
+```bash
+export GRIMOIRE_HOME=/opt/grimoire
+npx @crack-break-make/mcp-grimoire  # Uses /opt/grimoire
+```
+
+**3. Multi-User Systems**:
+
+```bash
+export GRIMOIRE_HOME=/shared/grimoire/user-$USER
+# Each user has isolated grimoire directory
+```
+
+**4. Development/Staging**:
+
+```bash
+export GRIMOIRE_HOME=/workspace/grimoire-dev
+# Separate dev environment from production ~/.grimoire
+```
+
+---
+
+## Summary
+
+This ADR documents two complementary decisions:
+
+1. **Original (2026-01-19)**: Use `~/.grimoire/.env` for dynamic environment variable resolution
+   - Solves: Dynamic spell creation without restart
+   - Benefit: Live credential management
+
+2. **Update (2026-01-22)**: Add `GRIMOIRE_HOME` override capability
+   - Solves: Test isolation and custom installations
+   - Benefit: Clean tests, flexible deployment
+
+Both decisions work together to provide:
+
+- ✅ Production: `~/.grimoire/.env` with live reloading
+- ✅ Testing: Isolated directories via `GRIMOIRE_HOME`
+- ✅ Custom: Flexible deployment locations
+- ✅ Security: File permissions and separation of concerns

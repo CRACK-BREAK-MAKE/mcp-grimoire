@@ -39,7 +39,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir, cleanupTestGrimoireDir } from './helpers/test-path-manager';
 import { startFastMCPServer, stopServer, FASTMCP_PORTS } from './helpers/test-server-manager';
 import {
   readSpellFile,
@@ -54,12 +54,12 @@ describe('CLI create - No Auth HTTP', () => {
   let serverProcess: ChildProcess;
   const serverPort = FASTMCP_PORTS.NO_AUTH_HTTP;
   const serverUrl = `http://localhost:${serverPort}/mcp`;
-  const testSpellName = 'calculator-utilities';
+  const testSpellName = 'calculator-utilities-http'; // Calculator & Utilities v1.0
   let grimoireDir: string;
   let spellFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('no-auth-http');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
 
     const { ensureDirectories } = await import('../../utils/paths');
@@ -75,8 +75,8 @@ describe('CLI create - No Auth HTTP', () => {
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'no_auth_http_server');
 
-    // SKIP CLEANUP: Keep spell files for manual verification
-    // TODO: Re-enable cleanup once all tests are verified
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
     // if (existsSync(spellFilePath)) {
     //   await rm(spellFilePath);
     // }

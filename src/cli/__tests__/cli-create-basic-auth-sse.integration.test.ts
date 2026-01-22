@@ -40,7 +40,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -61,13 +61,13 @@ describe('CLI create - Basic Auth SSE', () => {
   let serverProcess: ChildProcess;
   const serverPort = FASTMCP_PORTS.BASIC_AUTH_SSE;
   const serverUrl = `http://localhost:${serverPort}/sse`;
-  const testSpellName = 'file-storage-service';
+  const testSpellName = 'file-storage-basic-sse'; // File Storage Service v1.0 + basic auth
   let grimoireDir: string;
   let spellFilePath: string;
   let envFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('basic-auth-sse');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     envFilePath = join(grimoireDir, '.env');
 
@@ -84,12 +84,8 @@ describe('CLI create - Basic Auth SSE', () => {
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'basic_auth_sse_server');
 
-    // SKIP CLEANUP: Keep spell files for manual verification
-    // TODO: Re-enable cleanup once all tests are verified
-    // if (existsSync(spellFilePath)) {
-    //   await rm(spellFilePath);
-    // }
-    console.log(`\n[TEST] Spell file kept for verification: ${spellFilePath}\n`);
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   }, 30000);
 
   it('should create spell with Basic Auth for SSE transport and validate all fields', async () => {

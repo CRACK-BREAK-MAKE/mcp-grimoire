@@ -44,7 +44,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -70,7 +70,7 @@ describe('CLI create - Security Keys SSE', () => {
   let envFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('security-keys-sse');
     envFilePath = join(grimoireDir, '.env');
 
     const { ensureDirectories } = await import('../../utils/paths');
@@ -86,7 +86,7 @@ describe('CLI create - Security Keys SSE', () => {
   }, 30000);
 
   it('should create spell with GitHub token header (simulating GitHub MCP)', async () => {
-    const testSpellName = 'github-mcp-sse';
+    const testSpellName = 'database-query-github-sse'; // Database Query Tool SSE v1.0 with GitHub PAT
     const spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     if (existsSync(spellFilePath)) await rm(spellFilePath);
 
@@ -152,7 +152,7 @@ describe('CLI create - Security Keys SSE', () => {
   }, 45000);
 
   it('should create spell with Brave API key header (simulating Brave MCP)', async () => {
-    const testSpellName = 'brave-mcp-sse';
+    const testSpellName = 'database-query-brave-sse'; // Database Query Tool SSE v1.0 with Brave API
     const spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     if (existsSync(spellFilePath)) await rm(spellFilePath);
 

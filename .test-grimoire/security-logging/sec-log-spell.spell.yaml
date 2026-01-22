@@ -1,0 +1,76 @@
+name: sec-log-spell
+version: 1.0.0
+description: >+
+  No Auth HTTP Server v2.14.3 MCP server (HTTP transport)
+
+
+  Provides 3 tools for calculate, convert, generate operations.
+
+
+  ## Available Tools
+
+
+  - **calculate**: Evaluate a mathematical expression safely.
+
+
+  Args:
+      expression: Mathematical expression (e.g., "2 + 2", "sqrt(16)", "sin(pi/2)")
+
+  Returns:
+      Dictionary with calculation result and details (Required: expression)
+
+  ### convert
+
+
+  - **convert_units**: Convert between different units of measurement.
+
+
+  Args:
+      value: Numeric value to convert
+      from_unit: Source unit (m, km, mi, kg, lb, c, f, etc.)
+      to_unit: Target unit
+
+  Returns:
+      Dictionary with converted value and conversion details (Required: value, from_unit, to_unit)
+
+  ### generate
+
+
+  - **generate_random**: Generate random data (numbers, UUIDs, passwords).
+
+
+  Args:
+      type: Type of random data (number, uuid, password, hex)
+      count: Number of items to generate (1-100)
+      min: Minimum value for numbers (default: 0)
+      max: Maximum value for numbers (default: 100)
+
+  Returns:
+      Dictionary with generated random data
+
+keywords:
+  - sec
+  - log
+  - spell
+  - calculate
+  - convert
+  - units
+  - generate
+  - random
+server:
+  transport: http
+  url: http://localhost:8016/mcp
+  auth:
+    type: bearer
+    token: ${SEC_LOG_SPELL__API_TOKEN}
+steering: |
+  # No Auth HTTP Server (v2.14.3) - When to Use
+
+  Use when user needs: sec, log operations
+
+  **Available Tools (3)**:
+  calculate
+
+  **convert**: convert_units
+
+  **generate**: generate_random

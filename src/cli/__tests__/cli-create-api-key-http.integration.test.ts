@@ -39,7 +39,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -61,13 +61,13 @@ describe('CLI create - API Key HTTP', () => {
   let serverProcess: ChildProcess;
   const serverPort = FASTMCP_PORTS.API_KEY_HTTP;
   const serverUrl = `http://localhost:${serverPort}/mcp`;
-  const testSpellName = 'weather-api';
+  const testSpellName = 'weather-api-bearer-http'; // Weather API v2.0 with bearer token
   let grimoireDir: string;
   let spellFilePath: string;
   let envFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('api-key-http');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     envFilePath = join(grimoireDir, '.env');
 
@@ -82,16 +82,11 @@ describe('CLI create - API Key HTTP', () => {
   }, 60000); // 60s timeout for server startup
 
   afterAll(async () => {
-    // Stop server
     await stopServer(serverProcess, serverPort, 'api_key_http_server');
 
-    // SKIP CLEANUP: Keep spell files for manual verification
-    // TODO: Re-enable cleanup once all tests are verified
-    // if (existsSync(spellFilePath)) {
-    //   await rm(spellFilePath);
-    // }
-    console.log(`\n[TEST] Spell file kept for verification: ${spellFilePath}\n`);
-  }, 30000); // 30s timeout for cleanup
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+  }, 30000);
 
   it('should create spell with API Key and validate all fields', async () => {
     // ARRANGE: Prepare CLI options with API Key

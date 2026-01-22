@@ -41,7 +41,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -62,13 +62,13 @@ describe('CLI create - API Key HTTP Custom Header', () => {
   let serverProcess: ChildProcess;
   const serverPort = FASTMCP_PORTS.SECURITY_KEYS_HTTP;
   const serverUrl = `http://localhost:${serverPort}/mcp`;
-  const testSpellName = 'test-api-key-http-header-spell';
+  const testSpellName = 'database-query-header'; // Matches server: Database Query Tool v1.0 + custom header
   let grimoireDir: string;
   let spellFilePath: string;
   let envFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('api-key-http-header');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     envFilePath = join(grimoireDir, '.env');
 
@@ -85,9 +85,8 @@ describe('CLI create - API Key HTTP Custom Header', () => {
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'security_keys_http_server');
 
-    if (existsSync(spellFilePath)) {
-      await rm(spellFilePath);
-    }
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   }, 30000);
 
   it('should create spell with custom header (no auth field)', async () => {

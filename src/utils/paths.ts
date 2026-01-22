@@ -4,7 +4,7 @@
  * See ADR-0008 for decision rationale
  */
 
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { homedir, tmpdir } from 'os';
 import { mkdir, chmod } from 'fs/promises';
 
@@ -23,8 +23,24 @@ let pathsCache: EnvPaths | null = null;
 
 async function getEnvPaths(): Promise<EnvPaths> {
   if (pathsCache == null) {
-    const envPaths = (await import('env-paths')).default;
-    pathsCache = envPaths('grimoire', { suffix: '' });
+    // Check for GRIMOIRE_HOME override first (testing/custom installations)
+    const overrideDir = process.env.GRIMOIRE_HOME;
+
+    if (overrideDir != null && overrideDir !== '') {
+      // Use custom directory instead of env-paths
+      const grimoireDir = resolve(overrideDir);
+      pathsCache = {
+        config: grimoireDir,
+        cache: grimoireDir,
+        log: grimoireDir,
+        data: grimoireDir,
+        temp: join(grimoireDir, 'tmp'),
+      };
+    } else {
+      // Use env-paths for OS-appropriate directories
+      const envPaths = (await import('env-paths')).default;
+      pathsCache = envPaths('grimoire', { suffix: '' });
+    }
   }
   return pathsCache;
 }
@@ -36,6 +52,7 @@ let syncPaths: EnvPaths | null = null;
 /**
  * Initialize paths synchronously (call this at app startup)
  * Required because env-paths is ESM-only
+ * Respects GRIMOIRE_HOME environment variable if set
  */
 export async function initializePaths(): Promise<void> {
   syncPaths = await getEnvPaths();
@@ -43,21 +60,35 @@ export async function initializePaths(): Promise<void> {
 
 // Helper to get paths (falls back to platform-specific logic if not initialized)
 // Following Claude Code convention: use ~/.grimoire on all platforms
+// Supports GRIMOIRE_HOME environment variable for testing/custom installations
 function getPaths(): EnvPaths {
+  // Use cached value if available (either from async init or previous sync call)
   if (syncPaths != null) return syncPaths;
+  if (pathsCache != null) return pathsCache;
 
-  // Fallback: use ~/.grimoire following Claude Code convention
-  // Claude Code uses ~/.claude, we use ~/.grimoire
-  const home = homedir();
-  const grimoireDir = join(home, '.grimoire');
+  // No cache - compute paths and cache for future calls
+  // Check for GRIMOIRE_HOME environment variable override (for testing/custom installations)
+  const overrideDir = process.env.GRIMOIRE_HOME;
 
-  return {
+  const grimoireDir =
+    overrideDir != null && overrideDir !== ''
+      ? resolve(overrideDir) // Use absolute path from override
+      : join(homedir(), '.grimoire'); // Default: ~/.grimoire following Claude Code convention
+
+  const paths = {
     config: grimoireDir,
     cache: grimoireDir,
     log: grimoireDir,
     data: grimoireDir,
-    temp: join(tmpdir(), 'grimoire'),
+    temp:
+      overrideDir != null && overrideDir !== ''
+        ? join(grimoireDir, 'tmp') // Use subdirectory for test isolation
+        : join(tmpdir(), 'grimoire'), // Default: system temp directory
   };
+
+  // Cache for future sync calls
+  syncPaths = paths;
+  return paths;
 }
 
 /**
@@ -98,6 +129,22 @@ export function getSpellDirectory(): string {
  */
 export function getEmbeddingCachePath(): string {
   return join(PATHS.cache, 'embeddings.msgpack');
+}
+
+/**
+ * Reset paths cache - Used in tests to pick up GRIMOIRE_HOME changes
+ * Call this after setting/unsetting GRIMOIRE_HOME environment variable
+ *
+ * @example
+ * ```typescript
+ * process.env.GRIMOIRE_HOME = '/test/dir';
+ * resetPathsCache();
+ * // Now getSpellDirectory() will return '/test/dir'
+ * ```
+ */
+export function resetPathsCache(): void {
+  syncPaths = null;
+  pathsCache = null;
 }
 
 /**

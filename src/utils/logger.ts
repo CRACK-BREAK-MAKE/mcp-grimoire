@@ -66,7 +66,8 @@ type Component =
   | 'WATCH' // File watching
   | 'CACHE' // Embedding cache
   | 'AUTH' // Authentication (Bearer, OAuth, Basic)
-  | 'ENV'; // Environment variable resolution
+  | 'ENV' // Environment variable resolution
+  | 'TEST'; // Environment variable resolution
 
 interface LogContext {
   [key: string]: unknown;

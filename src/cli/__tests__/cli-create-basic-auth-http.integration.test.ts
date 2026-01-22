@@ -49,7 +49,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -71,14 +71,13 @@ describe('CLI create - Basic Auth HTTP', () => {
   let serverProcess: ChildProcess;
   const serverPort = FASTMCP_PORTS.BASIC_AUTH_HTTP;
   const serverUrl = `http://localhost:${serverPort}/mcp`;
-  const testSpellName = 'project-manager';
+  const testSpellName = 'project-manager-basic-http'; // Project Manager v1.0 + basic auth
   let grimoireDir: string;
   let spellFilePath: string;
   let envFilePath: string;
 
   beforeAll(async () => {
-    // Get real grimoire directory
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('basic-auth-http');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     envFilePath = join(grimoireDir, '.env');
 
@@ -96,16 +95,11 @@ describe('CLI create - Basic Auth HTTP', () => {
   }, 60000); // 60s timeout for server startup
 
   afterAll(async () => {
-    // Stop server
     await stopServer(serverProcess, serverPort, 'basic_auth_http_server');
 
-    // SKIP CLEANUP: Keep spell files for manual verification
-    // TODO: Re-enable cleanup once all tests are verified
-    // if (existsSync(spellFilePath)) {
-    //   await rm(spellFilePath);
-    // }
-    console.log(`\n[TEST] Spell file kept for verification: ${spellFilePath}\n`);
-  }, 30000); // 30s timeout for cleanup
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
+  }, 30000);
 
   it('should create spell with Basic Auth and validate all fields', async () => {
     // ARRANGE: Prepare CLI options with Basic Auth credentials

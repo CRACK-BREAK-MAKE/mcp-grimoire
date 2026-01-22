@@ -65,7 +65,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand } from '../commands/create';
 import {
   startFastMCPServer,
@@ -89,7 +89,7 @@ describe('CLI create - Probe Failure Handling', () => {
   const BASIC_AUTH_PORT = FASTMCP_PORTS.PROBE_FAILURE_HTTP; // 8013 - dedicated port for this test
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('probe-failure');
     envFilePath = join(grimoireDir, '.env');
     const { ensureDirectories } = await import('../../utils/paths');
     await ensureDirectories();
@@ -103,6 +103,9 @@ describe('CLI create - Probe Failure Handling', () => {
 
   afterAll(async () => {
     await stopServer(basicAuthServerProcess, BASIC_AUTH_PORT, 'basic_auth_http_server');
+
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   }, 30000);
 
   it('should NOT create spell file when server is unreachable (connection refused)', async () => {

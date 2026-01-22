@@ -1,0 +1,61 @@
+name: weather-api-bearer-http
+version: 1.0.0
+description: >
+  Weather API v2.0 v2.14.3 MCP server (HTTP transport)
+
+
+  Provides 3 tools for various operations.
+
+
+  ## Available Tools
+
+
+  - **get_current_weather**: Get current weather conditions for a specified
+  city.
+
+
+  Args:
+      city: City name (e.g., "London", "New York", "Tokyo")
+      units: Temperature units - "metric" (Celsius) or "imperial" (Fahrenheit)
+
+  Returns:
+      Dictionary with current weather data including temperature, conditions, and wind (Required: city)
+  - **get_forecast**: Get weather forecast for upcoming days.
+
+
+  Args:
+      city: City name for the forecast
+      days: Number of days to forecast (1-7)
+
+  Returns:
+      Dictionary with daily forecasts including high/low temps and conditions (Required: city)
+  - **get_weather_alerts**: Check for active weather alerts and warnings.
+
+
+  Args:
+      city: City name to check for alerts
+
+  Returns:
+      Dictionary with active alerts, severity levels, and recommendations (Required: city)
+keywords:
+  - weather
+  - api
+  - bearer
+  - http
+  - get
+  - current
+  - forecast
+  - alerts
+server:
+  transport: http
+  url: http://localhost:8002/mcp
+  auth:
+    type: bearer
+    token: ${WEATHER_API_BEARER_HTTP__API_TOKEN}
+steering: |
+  # Weather API v2.0 (v2.14.3) - When to Use
+
+  Use when user needs: weather, api, bearer, http operations
+
+  **Available Tools (3)**:
+  get_current_weather, get_forecast, get_weather_alerts

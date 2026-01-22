@@ -70,7 +70,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   readSpellFile,
   readEnvFile,
@@ -88,7 +88,7 @@ describe('CLI create - stdio UI5 with env', () => {
   let envFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('stdio-ui5-with-env');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
     envFilePath = join(grimoireDir, '.env');
 
@@ -101,12 +101,8 @@ describe('CLI create - stdio UI5 with env', () => {
   });
 
   afterAll(async () => {
-    // SKIP CLEANUP: Keep spell files for manual verification
-    // TODO: Re-enable cleanup once all tests are verified
-    // if (existsSync(spellFilePath)) {
-    //   await rm(spellFilePath);
-    // }
-    console.log(`\n[TEST] Spell file kept for verification: ${spellFilePath}\n`);
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   });
 
   it('should create spell for stdio with environment variables', async () => {

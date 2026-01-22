@@ -185,7 +185,9 @@ describe('Gateway Error Paths', () => {
       const result = await gateway.handleResolveIntentCall({ query: '' });
 
       expect(result.status).toBe('not_found');
+      // @ts-ignore
       expect(result.message).toContain('empty');
+      // @ts-ignore
       expect(result.availableSpells).toBeDefined();
     });
 
@@ -199,6 +201,7 @@ describe('Gateway Error Paths', () => {
       const result = await gateway.handleResolveIntentCall({ query: '   \t\n  ' });
 
       expect(result.status).toBe('not_found');
+      // @ts-ignore
       expect(result.message).toContain('empty');
     });
 

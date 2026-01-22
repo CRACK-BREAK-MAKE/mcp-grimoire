@@ -38,7 +38,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import { startFastMCPServer, stopServer, FASTMCP_PORTS } from './helpers/test-server-manager';
 import {
   readSpellFile,
@@ -53,12 +53,12 @@ describe('CLI create - No Auth SSE', () => {
   let serverProcess: ChildProcess;
   const serverPort = FASTMCP_PORTS.NO_AUTH_SSE;
   const serverUrl = `http://localhost:${serverPort}/sse`;
-  const testSpellName = 'system-monitor';
+  const testSpellName = 'system-monitor-sse'; // System Monitor v1.0 // Matches server: System Monitor v1.0
   let grimoireDir: string;
   let spellFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('no-auth-sse');
     spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
 
     const { ensureDirectories } = await import('../../utils/paths');
@@ -74,12 +74,8 @@ describe('CLI create - No Auth SSE', () => {
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'no_auth_sse_server');
 
-    // SKIP CLEANUP: Keep spell files for manual verification
-    // TODO: Re-enable cleanup once all tests are verified
-    // if (existsSync(spellFilePath)) {
-    //   await rm(spellFilePath);
-    // }
-    console.log(`\n[TEST] Spell file kept for verification: ${spellFilePath}\n`);
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   }, 30000);
 
   it('should create spell without authentication for SSE and validate all fields', async () => {

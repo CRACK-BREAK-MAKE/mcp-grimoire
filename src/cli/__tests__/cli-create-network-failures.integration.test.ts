@@ -60,7 +60,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand, type CreateOptions } from '../commands/create';
 import { probeMCPServer } from '../utils/mcp-probe';
 import { startFastMCPServer, stopServer, FASTMCP_PORTS } from './helpers/test-server-manager';
@@ -69,7 +69,7 @@ describe('CLI create - Network Failures', () => {
   let grimoireDir: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('network-failures');
     const { ensureDirectories } = await import('../../utils/paths');
     await ensureDirectories();
   });

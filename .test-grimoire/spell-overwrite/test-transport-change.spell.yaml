@@ -1,0 +1,31 @@
+name: test-transport-change
+version: 1.0.0
+description: |
+  Brief description of what this spell does.
+
+  Add details about available tools and capabilities here.
+keywords:
+  - keyword1
+  - keyword2
+  - keyword3
+server:
+  transport: stdio
+  command: python
+  args:
+    - -m
+    - server
+  env: null
+steering: |
+  ## Test-transport-change - Expert Guidance
+
+  When helping users with this service:
+
+  ### Best Practices:
+  - Add important usage guidelines here
+  - Security considerations
+  - Common patterns and workflows
+
+  ### Tips:
+  - Performance optimization tips
+  - Error handling guidance
+  - User experience recommendations

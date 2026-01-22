@@ -1,0 +1,81 @@
+name: database-query-github-sse
+version: 1.0.0
+description: >+
+  Database Query Tool SSE v1.0 v2.14.3 MCP server (SSE transport)
+
+
+  Provides 3 tools for analyze, generate, calculate operations.
+
+
+  ## Available Tools
+
+
+  ### analyze
+
+
+  - **analyze_dataset**: Analyze a dataset and return statistical insights.
+
+
+  Args:
+      dataset_name: Name of the dataset to analyze
+      analysis_type: Type of analysis (summary, correlation, distribution)
+
+  Returns:
+      Dictionary with analysis results and statistics (Required: dataset_name)
+
+  ### generate
+
+
+  - **generate_report**: Generate analytical report from data source.
+
+
+  Args:
+      report_type: Type of report (sales, performance, usage, trends)
+      data_source: Data source identifier
+      format: Output format (pdf, xlsx, html, json)
+
+  Returns:
+      Dictionary with report generation details and download link (Required: report_type, data_source)
+
+  ### calculate
+
+
+  - **calculate_statistics**: Calculate statistical measures for a set of data
+  points.
+
+
+  Args:
+      data_points: List of numeric values to analyze
+      operations: List of operations to perform (mean, median, mode, stdev, variance)
+
+  Returns:
+      Dictionary with calculated statistical measures (Required: data_points)
+
+keywords:
+  - database
+  - query
+  - github
+  - sse
+  - analyze
+  - dataset
+  - generate
+  - report
+  - calculate
+  - statistics
+server:
+  transport: sse
+  url: http://localhost:8005/sse
+  headers:
+    X-GitHub-Token: ${DATABASE_QUERY_GITHUB_SSE__X_GITHUB_TOKEN}
+steering: |
+  # Database Query Tool SSE v1.0 (v2.14.3) - When to Use
+
+  Use when user needs: database, query, github, sse operations
+
+  **Available Tools (3)**:
+
+  **analyze**: analyze_dataset
+
+  **generate**: generate_report
+
+  **calculate**: calculate_statistics

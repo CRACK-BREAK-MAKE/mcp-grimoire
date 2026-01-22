@@ -1,0 +1,84 @@
+name: project-manager-basic-http
+version: 1.0.0
+description: >+
+  Project Manager v1.0 v2.14.3 MCP server (HTTP transport)
+
+
+  Provides 3 tools for create, add, get operations.
+
+
+  ## Available Tools
+
+
+  ### create
+
+
+  - **create_project**: Create a new project with tasks and milestones.
+
+
+  Args:
+      name: Project name
+      description: Detailed project description
+      deadline: Deadline in YYYY-MM-DD format
+      priority: Priority level (low, medium, high, critical)
+
+  Returns:
+      Dictionary with created project details and ID (Required: name, description, deadline)
+
+  ### add
+
+
+  - **add_task**: Add a new task to an existing project.
+
+
+  Args:
+      project_id: ID of the project to add task to
+      title: Task title/description
+      assignee: Person assigned to the task
+      due_date: Task due date in YYYY-MM-DD format
+
+  Returns:
+      Dictionary with task details and status (Required: project_id, title, assignee, due_date)
+
+  ### get
+
+
+  - **get_project_status**: Get comprehensive status report for a project
+  including tasks and progress.
+
+
+  Args:
+      project_id: ID of the project to check
+
+  Returns:
+      Dictionary with project status, tasks, and completion metrics (Required: project_id)
+
+keywords:
+  - project
+  - manager
+  - basic
+  - http
+  - create
+  - add
+  - task
+  - get
+  - status
+server:
+  transport: http
+  url: http://localhost:8000/mcp
+  auth:
+    type: basic
+    username: ${PROJECT_MANAGER_BASIC_HTTP__API_USERNAME}
+    password: ${PROJECT_MANAGER_BASIC_HTTP__API_PASSWORD}
+steering: |
+  # Project Manager v1.0 (v2.14.3) - When to Use
+
+  Use when user needs: project, manager, basic, http operations
+
+  **Available Tools (3)**:
+
+  **create**: create_project
+
+  **add**: add_task
+
+  **get**: get_project_status

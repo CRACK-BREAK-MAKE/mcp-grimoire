@@ -48,7 +48,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { existsSync } from 'fs';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import {
   startFastMCPServer,
   stopServer,
@@ -75,7 +75,7 @@ describe('CLI create - API Key SSE', () => {
   let envFilePath: string;
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('api-key-sse');
     envFilePath = join(grimoireDir, '.env');
 
     const { ensureDirectories } = await import('../../utils/paths');
@@ -86,10 +86,13 @@ describe('CLI create - API Key SSE', () => {
 
   afterAll(async () => {
     await stopServer(serverProcess, serverPort, 'api_key_sse_server');
+
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   }, 30000);
 
   it('should create spell with API Key over SSE and validate all fields', async () => {
-    const testSpellName = 'news-aggregator-bearer';
+    const testSpellName = 'news-aggregator-bearer-sse'; // News Aggregator v1.5 + bearer token
     const spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
 
     if (existsSync(spellFilePath)) await rm(spellFilePath);
@@ -229,7 +232,7 @@ describe('CLI create - API Key SSE', () => {
   }, 45000);
 
   it('should create spell with custom header for SSE and validate all fields', async () => {
-    const testSpellName = 'test-api-key-sse-header';
+    const testSpellName = 'news-aggregator-header-sse'; // News Aggregator v1.5 with custom header
     const spellFilePath = join(grimoireDir, `${testSpellName}.spell.yaml`);
 
     if (existsSync(spellFilePath)) await rm(spellFilePath);

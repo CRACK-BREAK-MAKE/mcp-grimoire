@@ -54,7 +54,7 @@ import { ChildProcess } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { rm, writeFile } from 'fs/promises';
-import { getSpellDirectory } from '../../utils/paths';
+import { setupTestGrimoireDir } from './helpers/test-path-manager';
 import { createCommand, type CreateOptions } from '../commands/create';
 import { startFastMCPServer, stopServer, FASTMCP_PORTS } from './helpers/test-server-manager';
 
@@ -67,7 +67,7 @@ describe('CLI create - File Conflicts', () => {
   const SSE_PORT = FASTMCP_PORTS.FILE_CONFLICTS_SSE; // 8015 - dedicated port for this test
 
   beforeAll(async () => {
-    grimoireDir = getSpellDirectory();
+    grimoireDir = await setupTestGrimoireDir('file-conflicts');
     const { ensureDirectories } = await import('../../utils/paths');
     await ensureDirectories();
 
@@ -80,8 +80,8 @@ describe('CLI create - File Conflicts', () => {
     await stopServer(httpServerProcess, HTTP_PORT, 'no_auth_http_server');
     await stopServer(sseServerProcess, SSE_PORT, 'no_auth_sse_server');
 
-    // SKIP CLEANUP: Keep spell files for manual verification
-    console.log(`\n[TEST] Spell files kept for verification in: ${grimoireDir}\n`);
+    // Keep spell files for manual verification - no cleanup
+    console.log(`\n[TEST] Spell files kept in: ${grimoireDir}\n`);
   }, 30000);
 
   it('should overwrite existing spell file in non-interactive mode', async () => {
