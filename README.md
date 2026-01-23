@@ -52,7 +52,53 @@ MCP Grimoire achieves **97% token reduction** through:
 
 ## 🚀 Quick Start
 
-### 1. Configure MCP Server (in Claude Desktop / GitHub Copilot)
+### Prerequisites
+
+- **Node.js** 18+ (for running MCP servers)
+- **Claude Desktop** or **GitHub Copilot** (AI agent with MCP support)
+- Basic understanding of command-line tools
+
+### Setup Workflow
+
+```
+1. Create Spells (Terminal)      →  2. Configure Grimoire (mcp.json)  →  3. Use in AI Agent
+   npx mcp-grimoire create           Add to Claude/Copilot config          Ask questions naturally
+   - Interactive wizard              - Grimoire runs as MCP gateway        - Servers spawn on-demand
+   - Auto-probes server              - Debug with GRIMOIRE_DEBUG           - Auto-cleanup after 5 turns idle
+```
+
+### 1. Create Spells First (in Terminal)
+
+**⚠️ IMPORTANT**: Always create your spells BEFORE configuring the MCP server!
+
+Run the interactive wizard (recommended for all users):
+
+```bash
+# Interactive mode - wizard guides you step-by-step
+npx @crack-break-make/mcp-grimoire create
+```
+
+The wizard will:
+
+- ✅ Guide you through each configuration step
+- ✅ Automatically probe the server (validates connection)
+- ✅ Auto-generate keywords from discovered tools
+- ✅ Create intelligent steering instructions
+- ✅ **Prevent spell creation if server can't be reached**
+- ✅ Save spell to `~/.grimoire/yourspell.spell.yaml`
+
+**Why probe matters**: If probing fails, the spell is NOT created (prevents broken configs).
+
+**List your spells**: `npx @crack-break-make/mcp-grimoire list`
+
+### 2. Configure MCP Server (in Claude Desktop / GitHub Copilot)
+
+**Only after creating spells**, add Grimoire to your MCP configuration.
+
+📚 **Learn more about MCP configuration**:
+
+- [VS Code Copilot MCP Setup](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)
+- [MCP Local Server Connection Guide](https://modelcontextprotocol.io/docs/develop/connect-local-servers)
 
 Add to your `claude_desktop_config.json`:
 
@@ -64,29 +110,54 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "grimoire": {
       "command": "npx",
-      "args": ["-y", "@crack-break-make/mcp-grimoire"]
+      "args": ["-y", "@crack-break-make/mcp-grimoire"],
+      "env": {
+        "GRIMOIRE_DEBUG": "true"
+      }
     }
   }
 }
 ```
 
+**Configuration Options**:
+
+- `GRIMOIRE_DEBUG`: Set to `"true"` to enable detailed logging (useful for troubleshooting)
+- `env`: Pass environment variables to Grimoire and spawned spell servers
+
 **Restart Claude Desktop** - Grimoire MCP server is now running!
 
-### 2. Create Spells (in Terminal)
+**For GitHub Copilot (VS Code)**, add to `.vscode/mcp.json`:
 
-**Open a terminal** and run CLI commands to manage spells:
+```json
+{
+  "mcpServers": {
+    "grimoire": {
+      "command": "npx",
+      "args": ["-y", "@crack-break-make/mcp-grimoire"],
+      "env": {
+        "GRIMOIRE_DEBUG": "true"
+      }
+    }
+  }
+}
+```
+
+### 3. Manage Spells (CLI Commands)
+
+**For advanced users**, CLI mode is available with command arguments:
 
 ```bash
-# Create a new spell (interactive wizard)
-# Note: Arguments trigger CLI mode via dual-mode detection
-npx @crack-break-make/mcp-grimoire create
-
 # List installed spells
 npx @crack-break-make/mcp-grimoire list
 
 # Validate a spell configuration
 npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
+
+# Show help
+npx @crack-break-make/mcp-grimoire --help
 ```
+
+**Note**: Most users should use interactive mode (`create` without args) rather than CLI mode with arguments.
 
 **Key Point**:
 
@@ -94,15 +165,20 @@ npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
 - 💻 **CLI Commands** run in your terminal with command arguments (create, list, etc.)
 - Same package, two modes - automatically detected based on stdin and arguments!
 
-### 3. Use in Claude
+### 4. Use in Claude or Copilot
 
-Ask Claude to interact with your tools:
+After restarting your AI agent, ask it to interact with your tools:
 
 ```
 Show me all users from the database
 ```
 
-Grimoire will automatically activate the right MCP server based on your query!
+Grimoire will automatically:
+
+- Match your query to the right spell ("postgres")
+- Spawn the MCP server with authentication
+- Provide tools to Claude/Copilot
+- Inject steering guidance for best practices
 
 ---
 
@@ -110,22 +186,30 @@ Grimoire will automatically activate the right MCP server based on your query!
 
 MCP Grimoire intelligently detects how it's being called using a **3-step detection strategy**:
 
-| Mode           | How It's Called                  | Purpose                           | Example                                     |
-| -------------- | -------------------------------- | --------------------------------- | ------------------------------------------- |
-| **MCP Server** | From `mcp.json` with stdio pipes | Runs as MCP gateway for AI agents | Claude Desktop spawns it automatically      |
-| **CLI Tool**   | From terminal with arguments     | Manage spell configurations       | `npx @crack-break-make/mcp-grimoire create` |
+| Mode                | How It's Called                     | Purpose                           | Who Uses It                                      |
+| ------------------- | ----------------------------------- | --------------------------------- | ------------------------------------------------ |
+| **MCP Server**      | From `mcp.json` with stdio pipes    | Runs as MCP gateway for AI agents | Claude Desktop / Copilot spawns it automatically |
+| **Interactive CLI** | From terminal with `create` command | Easy spell creation with wizard   | ⭐ **All users - recommended!**                  |
+| **Advanced CLI**    | From terminal with other arguments  | Manage spell configurations       | ⚠️ Power users only                              |
 
-**You only install once** - the entry point (`dist/index.js`) detects the mode automatically:
+**You only install once** - the entry point (`dist/index.js`) detects the mode automatically.
 
 ### Detection Logic (matches MCP best practices)
 
-1. **Args First**: If CLI arguments provided (e.g., `--help`, `create`) → **CLI Mode**
-2. **TTY Check**: If no args but running in terminal (TTY) → **CLI Mode** (shows help)
-3. **Default**: If stdin is piped from MCP client → **MCP Server Mode**
+1. **Args First**: If CLI arguments provided (e.g., `--help`, `list`, `validate`) → **CLI Mode**
+2. **Interactive**: If `create` command without args → **Interactive Wizard** (⭐ recommended!)
+3. **TTY Check**: If no args but running in terminal (TTY) → **CLI Mode** (shows help)
+4. **Default**: If stdin is piped from MCP client → **MCP Server Mode**
 
 This prevents the server from hanging if you accidentally run `npx mcp-grimoire` with no arguments.
 
-### GitHub Copilot (VS Code)
+### Configuration Examples
+
+#### Claude Desktop
+
+Already configured above in Step 2.
+
+#### GitHub Copilot (VS Code)
 
 Add to `.vscode/mcp.json` or project `mcp.json`:
 
@@ -140,7 +224,7 @@ Add to `.vscode/mcp.json` or project `mcp.json`:
 }
 ```
 
-Then use CLI in terminal to create spells (same as above).
+**Then use interactive mode in terminal** to create spells (same as above).
 
 ---
 
@@ -170,14 +254,51 @@ Executes with best practices → After 5 turns idle → Kill server
 │  - Process Lifecycle Management      │
 │  - Tool Routing                      │
 │  - Steering Injection                │
+│  - Authentication Handling           │
 └──────┬──────────────┬────────────────┘
-       │ stdio        │ stdio
-       │              │
+       │ stdio/http   │ sse/http
+       │ + auth       │ + auth
 ┌──────▼─────┐  ┌────▼──────┐
 │  Postgres  │  │  Stripe   │  ... (spawned on-demand)
-│ MCP Server │  │ MCP Server│
+│ MCP Server │  │ MCP Server│       with auth headers
 └────────────┘  └───────────┘
 ```
+
+### Key Components
+
+**1. Intent Resolution (Hybrid Approach)**
+
+- **Keyword Matching**: Exact and fuzzy matching on spell keywords
+- **Semantic Search**: Embedding-based similarity (MessagePack storage)
+- **Confidence Scoring**: 0.0-1.0 scale determines auto-spawn vs alternatives
+- **Auto-generation**: Probe feature extracts keywords from tool names
+
+**2. Process Lifecycle Management**
+
+- **On-Demand Spawning**: Servers start only when confidence ≥ 0.85
+- **Usage Tracking**: Every tool call updates `lastUsedTurn`
+- **5-Turn Inactivity**: Automatic cleanup after 5 idle conversational turns
+- **Graceful Shutdown**: SIGTERM → wait → SIGKILL if needed
+
+**3. Authentication Pipeline**
+
+- **Environment Expansion**: `${VAR}` syntax resolves from shell environment
+- **Header Building**: Constructs Bearer, Basic, or custom auth headers
+- **Secure Storage**: Credentials never logged literally (masked as `***`)
+- **OAuth Support**: \ud83d\udea7 Planned for future release (not yet implemented)
+  - For now, use Bearer tokens obtained manually for OAuth scenarios
+
+**4. Tool Routing**
+
+- **Transparent Proxying**: Routes tool calls to appropriate spawned servers
+- **MCP Protocol**: Stdio, SSE, or HTTP transport based on spell config
+- **Error Handling**: Graceful fallbacks with detailed error messages
+
+**5. Steering Injection**
+
+- **Best Practices**: Injects expert guidance into tool descriptions
+- **Schema Context**: Embeds database schemas, API limits, security rules
+- **Auto-generation**: Probe discovers tools and creates contextual steering
 
 ### Multi-Tier Intent Resolution
 
@@ -190,9 +311,24 @@ Grimoire uses a **confidence-based approach** to decide when to auto-spawn vs as
 | **Low**    | 0.30-0.49  | **Weak matches**           | "analyze data" → 5 weak matches               |
 | **None**   | < 0.30     | **Not found**              | "launch rocket" → Error + available spells    |
 
-**70% of queries** hit high confidence (zero-friction UX)
-**20% of queries** hit medium confidence (AI agent picks from context)
+**70% of queries** hit high confidence (zero-friction UX)<br>
+**20% of queries** hit medium confidence (AI agent picks from context)<br>
 **10% of queries** need clarification
+
+### Probe Feature (Automatic Discovery)
+
+**Probing is AUTOMATIC and ENABLED BY DEFAULT** during interactive spell creation:
+
+1. **Validates server connection** with provided authentication
+2. **Calls `tools/list`** to discover available tools
+3. **Auto-generates keywords** from tool names (e.g., `query_database` → `["query", "database"]`)
+4. **Creates description** from server info and tool summaries
+5. **Generates steering** with tool schemas, security guidance, best practices
+6. **Prevents spell creation** if server can't be reached
+
+**Why this matters**: If the server can't be reached or authentication fails, the spell will NOT be created. This prevents polluting your `~/.grimoire/` folder with broken configurations.
+
+**Result**: Fully configured spell with intelligent defaults - no manual keyword/steering entry needed!
 
 ---
 
@@ -200,7 +336,9 @@ Grimoire uses a **confidence-based approach** to decide when to auto-spawn vs as
 
 A "spell" is a YAML configuration file that tells Grimoire how to spawn and use an MCP server.
 
-### Interactive Creation (Recommended)
+### Interactive Creation (Recommended for All Users)
+
+**This is the primary way to create spells** - the wizard makes it easy:
 
 ```bash
 # Run without installation (recommended)
@@ -211,21 +349,29 @@ npm install -g @crack-break-make/mcp-grimoire
 grimoire create
 ```
 
-The wizard will guide you through:
+The interactive wizard guides you through:
 
-1. **Spell name** (e.g., `postgres`)
+1. **Spell name** (e.g., `postgres`, `github-api`, `weather-service`)
 2. **Transport type** (stdio, SSE, or HTTP)
-3. **Server configuration** (command, args, or URL)
-4. **Environment variables** (for authenticated servers like GitHub, Stripe, etc.)
-5. **Server validation** (optional but recommended)
+3. **Server configuration** (command/args for stdio, URL for HTTP/SSE)
+4. **Authentication** (No auth, Bearer token, Basic auth, Security keys)
+5. **Environment variables** (for secrets and credentials)
+6. **Server validation** (automatic - probes server and auto-generates config)
 
-**With server probing** (auto-generates steering and keywords):
+**Probing is automatic** - the wizard will:
 
-```bash
-npx @crack-break-make/mcp-grimoire create --probe
-```
+- ✅ Connect to the server with your authentication
+- ✅ Validate the server actually works
+- ✅ Auto-generate keywords from discovered tool names
+- ✅ Create intelligent steering instructions
+- ✅ Discover tool schemas and parameters
+- ✅ **Prevent spell creation if server can't be reached** (keeps your folder clean!)
 
-### Manual Creation
+### Manual Creation Examples (Advanced Users Only)
+
+**⚠️ Most users should use interactive mode above.** Manual creation is for power users who want full control.
+
+#### Example 1: Stdio Server (No Authentication)
 
 Create `~/.grimoire/postgres.spell.yaml`:
 
@@ -234,7 +380,6 @@ name: postgres
 version: 1.0.0
 description: PostgreSQL database operations
 
-# MCP Server Configuration
 server:
   transport: stdio
   command: npx
@@ -244,7 +389,6 @@ server:
   env:
     DATABASE_URL: postgresql://user:pass@localhost/db
 
-# Intent Matching Keywords (minimum 3)
 keywords:
   - database
   - sql
@@ -253,11 +397,11 @@ keywords:
   - tables
   - users
 
-# Expert Guidance (Optional but Recommended)
 steering: |
   # Database Schema
   Tables:
     - users (id uuid, email string, created_at timestamp)
+    - orders (id uuid, user_id uuid, total decimal)
 
   # Security Rules
   ALWAYS use parameterized queries:
@@ -269,19 +413,128 @@ steering: |
   - created_at is indexed, use for date filtering
 ```
 
-**Environment Variables**:
+#### Example 2: HTTP Server (Bearer Token Authentication)
 
-For servers requiring authentication (GitHub, Stripe, databases, etc.), use the `${VAR_NAME}` syntax to reference shell environment variables:
+Create `~/.grimoire/weather-api.spell.yaml`:
+
+```yaml
+name: weather-api
+version: 1.0.0
+description: Weather forecast and current conditions
+
+server:
+  transport: http
+  url: http://localhost:8000/mcp
+  auth:
+    type: bearer
+    token: ${WEATHER_API_KEY} # From environment variable
+
+keywords:
+  - weather
+  - forecast
+  - temperature
+  - conditions
+  - climate
+
+steering: |
+  # API Usage
+  - Rate limit: 1000 calls/day
+  - Forecast available: 7 days ahead
+  - Historical data: Not available
+
+  # Best Practices
+  - Cache forecast results (updated hourly)
+  - Use city name or coordinates
+  - Check units: imperial (°F) or metric (°C)
+```
+
+#### Example 3: SSE Server (Custom Headers Authentication)
+
+Create `~/.grimoire/github-api.spell.yaml`:
+
+```yaml
+name: github-api
+version: 1.0.0
+description: GitHub repository and issue management
+
+server:
+  transport: sse
+  url: http://localhost:8001/sse
+  headers:
+    X-GitHub-Token: ${GITHUB_PERSONAL_ACCESS_TOKEN}
+    Accept: application/vnd.github.v3+json
+
+keywords:
+  - github
+  - repository
+  - repo
+  - issues
+  - pull
+  - requests
+  - commits
+
+steering: |
+  # GitHub API Guidelines
+  - Use full repository names: owner/repo
+  - Rate limit: 5000 requests/hour (authenticated)
+  - Always check permissions before write operations
+
+  # Security Best Practices
+  - Never hardcode tokens (use environment variables)
+  - Use fine-grained tokens when possible
+  - Minimum required scopes: repo, read:user
+```
+
+**Note**: For most real-world scenarios, use the interactive wizard (`create` without args) instead of manually writing YAML files. The examples above are for reference only.
+
+### Environment Variables
+
+For servers requiring authentication, **always use environment variable expansion**:
 
 ```yaml
 server:
   env:
-    GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN}
+    # Database connections
     DATABASE_URL: ${DATABASE_URL}
-    API_KEY: ${MY_API_KEY}
+    POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    # API keys
+    GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PAT}
+    WEATHER_API_KEY: ${WEATHER_KEY}
+    STRIPE_SECRET_KEY: ${STRIPE_SECRET}
+
+    # OAuth credentials
+    OAUTH_CLIENT_ID: ${ENTERPRISE_CLIENT_ID}
+    OAUTH_CLIENT_SECRET: ${ENTERPRISE_SECRET}
 ```
 
-The interactive wizard will prompt you for environment variables and suggest the `${VAR}` syntax by default. You can also provide literal values directly.
+**Setting Environment Variables**:
+
+**macOS/Linux** (in `~/.zshrc` or `~/.bashrc`):
+
+```bash
+export GITHUB_PAT="ghp_your_token_here"
+export WEATHER_KEY="your_weather_api_key"
+export DATABASE_URL="postgresql://user:pass@localhost/db"
+```
+
+**Windows** (PowerShell):
+
+```powershell
+$env:GITHUB_PAT="ghp_your_token_here"
+$env:WEATHER_KEY="your_weather_api_key"
+$env:DATABASE_URL="postgresql://user:pass@localhost/db"
+```
+
+Or create a `.env` file in your project (never commit to git):
+
+```bash
+GITHUB_PAT=ghp_your_token_here
+WEATHER_KEY=your_weather_api_key
+DATABASE_URL=postgresql://user:pass@localhost/db
+```
+
+**Security Best Practice**: ⚠️ Never hardcode secrets in spell files. Always use `${VAR_NAME}` syntax.
 
 **Spell File Location** (all platforms):
 
@@ -334,6 +587,180 @@ server:
 ```
 
 **Note**: Only **local MCP servers** (spawned by Grimoire) are supported in Phase 1. Remote servers (via `mcp-remote`) require different architecture and are planned for Phase 2.
+
+---
+
+## 🔐 Authentication Support
+
+Grimoire supports comprehensive authentication for secure MCP server connections:
+
+### ✅ No Authentication
+
+For public or local servers with no auth requirements:
+
+```yaml
+server:
+  transport: stdio
+  command: npx
+  args: ['-y', '@modelcontextprotocol/server-filesystem']
+  # No auth configuration needed
+```
+
+### ✅ API Key / Bearer Token
+
+For servers requiring API key authentication (sent as `Authorization: Bearer` header):
+
+```yaml
+server:
+  transport: http
+  url: http://localhost:8000/mcp
+  auth:
+    type: bearer
+    token: ${MY_API_KEY} # Environment variable expansion
+```
+
+**Common for**: Weather APIs, News services, Analytics platforms
+
+### ✅ Basic Authentication
+
+For servers using username/password authentication:
+
+```yaml
+server:
+  transport: http
+  url: http://localhost:8001/mcp
+  auth:
+    type: basic
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+```
+
+**Note**: Basic auth is sent as a Bearer token (Base64-encoded `username:password`) for FastMCP server compatibility.
+
+### ✅ Security Keys (Custom Headers)
+
+For servers requiring custom authentication headers (e.g., GitHub, Brave):
+
+```yaml
+server:
+  transport: sse
+  url: http://localhost:8002/sse
+  headers:
+    X-GitHub-Token: ${GITHUB_TOKEN}
+    X-Brave-Key: ${BRAVE_API_KEY}
+    X-Custom-Auth: ${CUSTOM_SECRET}
+```
+
+**Common for**: GitHub API, Brave Search, custom enterprise APIs
+
+### 🚧 OAuth 2.0 Flows (Planned for Future Release)
+
+OAuth 2.0 authentication flows are **NOT YET IMPLEMENTED**. They are planned for a future release.
+
+**Planned OAuth Flows** (not available yet):
+
+#### OAuth 2.0 Client Credentials (Planned)
+
+```yaml
+server:
+  transport: http
+  url: http://localhost:8003/mcp
+  auth:
+    type: client_credentials
+    clientId: ${OAUTH_CLIENT_ID}
+    clientSecret: ${OAUTH_CLIENT_SECRET}
+    tokenUrl: https://oauth.example.com/token
+    scope: read:data write:data # Optional
+```
+
+**Status**: 🚧 **Planned** - Not yet implemented
+
+#### OAuth 2.0 Private Key JWT (Planned)
+
+```yaml
+server:
+  transport: http
+  url: http://localhost:8004/mcp
+  auth:
+    type: private_key_jwt
+    clientId: ${OAUTH_CLIENT_ID}
+    privateKey: ${PRIVATE_KEY_PEM} # PEM format
+    tokenUrl: https://oauth.example.com/token
+    algorithm: RS256 # Optional: RS256 (default), RS384, RS512, ES256, ES384, ES512
+```
+
+**Status**: 🚧 **Planned** - Not yet implemented
+
+#### OAuth 2.0 Static Private Key JWT (Planned)
+
+For pre-generated JWT tokens with static assertions:
+
+```yaml
+server:
+  transport: http
+  url: http://localhost:8005/mcp
+  auth:
+    type: static_private_key_jwt
+    clientId: ${OAUTH_CLIENT_ID}
+    privateKey: ${PRIVATE_KEY_PEM}
+    tokenUrl: https://oauth.example.com/token
+    staticClaims:
+      sub: service-account@example.com
+      aud: https://api.example.com
+```
+
+**Status**: 🚧 **Planned** - Not yet implemented
+
+#### OAuth 2.0 Authorization Code (Planned)
+
+Interactive OAuth flow with browser-based authentication:
+
+```yaml
+server:
+  transport: http
+  url: http://localhost:8006/mcp
+  auth:
+    type: authorization_code
+    clientId: ${OAUTH_CLIENT_ID}
+    clientSecret: ${OAUTH_CLIENT_SECRET}
+    authorizationUrl: https://oauth.example.com/authorize
+    tokenUrl: https://oauth.example.com/token
+    redirectUri: http://localhost:3000/callback
+```
+
+**Status**: 🚧 **Planned** - Requires browser interaction flow (future release)
+
+### Summary of Auth Support
+
+| Authentication Type      | Status     | Use Case                       |
+| ------------------------ | ---------- | ------------------------------ |
+| No Auth                  | ✅ Working | Public/local servers           |
+| Bearer Token             | ✅ Working | API keys, access tokens        |
+| Basic Auth               | ✅ Working | Username/password servers      |
+| Security Keys            | ✅ Working | Custom headers (GitHub, Brave) |
+| OAuth Client Credentials | 🚧 Planned | Server-to-server OAuth         |
+| OAuth Private Key JWT    | 🚧 Planned | Enhanced security OAuth        |
+| OAuth Authorization Code | 🚧 Planned | Interactive browser flow       |
+
+**For now, use Bearer Token or Security Keys for most OAuth scenarios** by obtaining tokens manually.
+
+### Environment Variable Expansion
+
+All authentication fields support environment variable expansion using `${VAR_NAME}` syntax:
+
+```yaml
+server:
+  env:
+    DATABASE_URL: ${DATABASE_URL} # Database connection string
+    API_KEY: ${WEATHER_API_KEY} # API keys
+    GITHUB_TOKEN: ${GITHUB_PAT} # Personal access tokens
+    OAUTH_SECRET: ${OAUTH_CLIENT_SECRET} # OAuth secrets
+```
+
+**Security Best Practice**: Never hardcode secrets in spell files. Always use environment variables.
+
+**Spell File Location**: `~/.grimoire/*.spell.yaml` (not committed to version control)
+**Environment File**: Create a `.env` file in your project or set system environment variables
 
 ---
 
