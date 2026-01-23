@@ -1,4 +1,4 @@
-# 9. Multi-Tier Confidence-Based Intent Resolution
+# 9. Four-Tier Confidence-Based Intent Resolution
 
 Date: 2026-01-11
 
@@ -67,7 +67,7 @@ Initial proposal suggested adding LLM-based disambiguation in the gateway to rou
 
 ## Decision
 
-Implement a **3-tier confidence-based routing strategy** that leverages the AI agent's existing intelligence:
+Implement a **4-tier confidence-based routing strategy** that leverages the AI agent's existing intelligence:
 
 ### Tier 1: High Confidence (≥0.85) - Auto-Spawn
 
@@ -80,7 +80,7 @@ Implement a **3-tier confidence-based routing strategy** that leverages the AI a
 ```json
 {
   "status": "activated",
-  "power": {
+  "spell": {
     "name": "postgres",
     "confidence": 0.94,
     "match_type": "hybrid"
@@ -135,7 +135,7 @@ Implement a **3-tier confidence-based routing strategy** that leverages the AI a
       "keywords": ["database", "mongo", "nosql"]
     }
   ],
-  "message": "Multiple database tools found. Use activate_power(name) to select one."
+  "message": "Multiple database tools found. Use activate_spell(name) to select one."
 }
 ```
 
@@ -151,14 +151,17 @@ Claude: "You have PostgreSQL, MySQL, and MongoDB configured.
 Based on our earlier conversation about your e-commerce app,
 I'll use PostgreSQL."
 
-[Calls: activate_power({ name: "postgres" })]
+[Calls: activate_spell({ name: "postgres" })]
 ```
 
 ---
 
-### Tier 3: Low/No Match (<0.5) - Weak Matches or Error
+### Tier 3: Low/No Match (<0.5) - Weak Matches or Not Found
 
-**Action**: Return top 5 weak matches or error with available spells
+**Tier 3a (0.3-0.49)**: Return weak matches
+**Tier 3b (<0.3)**: Return not found with available spells
+
+**Action**: Return top 5 weak matches (3a) or error with available spells (3b)
 
 **Rationale**:
 
@@ -187,7 +190,7 @@ I'll use PostgreSQL."
 {
   "status": "not_found",
   "query": "launch rocket to Mars",
-  "available_powers": [
+  "availableSpells": [
     { "name": "postgres", "description": "PostgreSQL database" },
     { "name": "stripe", "description": "Payment processing" }
   ],
@@ -199,14 +202,14 @@ I'll use PostgreSQL."
 
 ---
 
-### New Tool: `activate_power`
+### New Tool: `activate_spell`
 
 To support Tier 2 (multiple matches), add a new MCP tool:
 
 ```typescript
 {
-  "name": "activate_power",
-  "description": "Activate a specific MCP power server by name. Use when resolve_intent returns multiple matches.",
+  "name": "activate_spell",
+  "description": "Activate a specific MCP spell server by name. Use when resolve_intent returns multiple matches.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -220,7 +223,7 @@ To support Tier 2 (multiple matches), add a new MCP tool:
 }
 ```
 
-**Behavior**: Spawn specified power, inject steering, return tools
+**Behavior**: Spawn specified spell, inject steering, return tools
 
 ---
 
@@ -263,11 +266,12 @@ Based on semantic similarity research and production systems (Pinecone, Weaviate
    - Easy to test and maintain
 
 5. **Graceful Degradation**: Each tier appropriate to confidence level
-   - High confidence: instant (best UX)
-   - Medium confidence: 0-1 turn delay (acceptable)
-   - Low confidence: clarification needed (expected)
+   - Tier 1 (≥0.85): instant activation (best UX)
+   - Tier 2 (0.5-0.84): 0-1 turn delay for selection (acceptable)
+   - Tier 3a (0.3-0.49): weak matches shown (rare)
+   - Tier 3b (<0.3): clarification needed (expected for unrelated queries)
 
-6. **Scalable**: Can add hundreds of powers without changing strategy
+6. **Scalable**: Can add hundreds of spells without changing strategy
 
 ### Negative Consequences
 
@@ -293,12 +297,12 @@ Based on semantic similarity research and production systems (Pinecone, Weaviate
 
 ### Risks
 
-**Risk 1: AI Agent Doesn't Use `activate_power` Correctly**
+**Risk 1: AI Agent Doesn't Use `activate_spell` Correctly**
 
-- **Risk**: Agent sees alternatives but doesn't call activate_power
+- **Risk**: Agent sees alternatives but doesn't call activate_spell
 - **Likelihood**: Low (Claude is good at following tool instructions)
 - **Mitigation**:
-  - Clear message in response: "Use activate_power(name) to select"
+  - Clear message in response: "Use activate_spell(name) to select"
   - Tool description explicitly states usage
   - Integration testing with Claude Desktop
 - **Fallback**: Agent will call resolve_intent again (harmless retry)
@@ -367,7 +371,7 @@ const result = await llm.complete(`Select tool for: "${query}"\nOptions: ${tools
 - ❌ User friction: Extra turn for every query
 - ❌ Slower: No instant activation path
 
-**Why rejected**: Sacrifices UX for 70% of queries that have clear matches. 0.85 threshold catches most exact matches with zero friction.
+**Why rejected**: Sacrifices UX for 70% of queries that have clear matches. The 4-tier system with 0.85 threshold catches most exact matches with zero friction.
 
 ---
 
@@ -400,7 +404,7 @@ confidence:
 
 ### Alternative 4: Learn from User Feedback
 
-**Approach**: Track which powers agent selects, improve resolver over time
+**Approach**: Track which spells agent selects, improve resolver over time
 
 ```typescript
 // Track selections
@@ -459,7 +463,7 @@ if (status === 'multiple_matches' && userSelected) {
 **Day 3**: Implement confidence-based routing
 
 ```typescript
-class PowerGatewayServer {
+class GrimoireGatewayServer {
   async handleResolveIntent(query: string) {
     const results = await hybridResolver.resolveTopN(query, 5);
 
@@ -477,10 +481,10 @@ class PowerGatewayServer {
 }
 ```
 
-**Day 4**: Implement `activate_power` tool
+**Day 4**: Implement `activate_spell` tool
 
 - Add tool definition to gateway
-- Add handler that spawns specified power
+- Add handler that spawns specified spell
 - Inject steering and return tools
 - Send tools/list_changed notification
 
@@ -494,22 +498,22 @@ class PowerGatewayServer {
 
 **Day 1-2**: Create validation dataset
 
-- 20 high-confidence queries (expect auto-spawn)
-- 20 medium-confidence queries (expect alternatives)
-- 20 low-confidence queries (expect weak matches)
-- 10 no-match queries (expect error)
+- 20 Tier 1 queries (≥0.85, expect auto-spawn)
+- 20 Tier 2 queries (0.5-0.84, expect alternatives)
+- 10 Tier 3a queries (0.3-0.49, expect weak matches)
+- 20 Tier 3b queries (<0.3, expect not_found)
 
 **Day 3**: Measure accuracy
 
 - Run validation dataset
-- Measure: correct tier classification, correct power in results
-- Target: >90% tier classification, >95% correct power in top-3
+- Measure: correct tier classification, correct spell in results
+- Target: >90% tier classification, >95% correct spell in top-3
 - Tune thresholds if needed
 
 **Day 4**: Integration testing
 
 - Test with real Claude Desktop
-- Verify activate_power UX
+- Verify activate_spell UX
 - Measure real-world latency
 - Test edge cases
 
@@ -524,14 +528,14 @@ class PowerGatewayServer {
 
 ### Success Criteria
 
-| Metric                            | Target    | Measurement                |
-| --------------------------------- | --------- | -------------------------- |
-| Token reduction                   | >95%      | Compare to 40,000 baseline |
-| Average latency                   | <100ms    | Weighted by frequency      |
-| Tier classification accuracy      | >90%      | Validation dataset         |
-| Top-3 accuracy                    | >95%      | Correct power in top-3     |
-| User friction (high confidence)   | 0 turns   | Should auto-spawn          |
-| User friction (medium confidence) | 0-1 turns | Agent decides or asks      |
+| Metric                       | Target    | Measurement                |
+| ---------------------------- | --------- | -------------------------- |
+| Token reduction              | >95%      | Compare to 40,000 baseline |
+| Average latency              | <100ms    | Weighted by frequency      |
+| Tier classification accuracy | >90%      | Validation dataset         |
+| Top-3 accuracy               | >95%      | Correct spell in top-3     |
+| User friction (Tier 1)       | 0 turns   | Should auto-spawn          |
+| User friction (Tier 2)       | 0-1 turns | Agent decides or asks      |
 
 ### Performance Targets
 
@@ -575,12 +579,12 @@ Savings: (40,000 - 1,166) / 40,000 = 97.1%
 
 1. **Configurable Thresholds**: Allow power users to tune confidence levels
 2. **Learning from Feedback**: Track selections, improve accuracy over time
-3. **Analytics Dashboard**: Show which powers are used, accuracy metrics
+3. **Analytics Dashboard**: Show which spells are used, accuracy metrics
 4. **A/B Testing**: Test different threshold values with subsets of users
 
 **Phase 6+** (advanced features):
 
-1. **Multi-Tool Scenarios**: Handle queries needing multiple powers simultaneously
+1. **Multi-Tool Scenarios**: Handle queries needing multiple spells simultaneously
 2. **Context-Aware Matching**: Use conversation history in gateway (if MCP protocol adds support)
 3. **Fine-Tuned Models**: Train custom embedding model on MCP domain
 
