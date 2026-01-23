@@ -1,7 +1,8 @@
-import type { ChildProcess } from 'child_process';
+import { ChildProcess } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { SpellConfig } from '../core/types';
 import type { ActiveSpell, Tool } from '../core/types';
@@ -449,25 +450,108 @@ export class ProcessLifecycleManager {
           spellName: name,
           pid: childProcess?.pid,
         });
-      } else if (transport === 'sse' || transport === 'http') {
-        // UNIFIED: Both SSE and HTTP use StreamableHTTPClientTransport
-        // StreamableHTTPClientTransport supports both SSE (GET) and HTTP (POST) in MCP spec
+      } else if (transport === 'sse') {
+        // SSE transport (OLD MCP protocol 2024-11-05: GET /sse + POST /messages)
         if (!('url' in config.server)) {
-          throw new ProcessSpawnError(`${transport.toUpperCase()} transport requires url`, name);
+          throw new ProcessSpawnError('SSE transport requires url', name);
         }
 
         const serverConfig = config.server;
 
-        logger.info(
-          'SPAWN',
-          `Connecting to ${transport.toUpperCase()} MCP server (Streamable HTTP)`,
+        logger.info('SPAWN', 'Connecting to SSE MCP server (Streamable HTTP)', {
+          spellName: name,
+          transport,
+          url: serverConfig.url,
+          hasAuth: serverConfig.auth != null,
+        });
+
+        // Expand environment variables in headers
+        let expandedHeaders: Record<string, string> | undefined;
+        if (serverConfig.headers && this.envManager) {
+          expandedHeaders = {};
+          for (const [key, value] of Object.entries(serverConfig.headers)) {
+            expandedHeaders[key] = this.envManager.expand(value);
+          }
+        } else {
+          expandedHeaders = serverConfig.headers;
+        }
+
+        // Expand environment variables in auth
+        const expandedAuth = serverConfig.auth
+          ? {
+              ...serverConfig.auth,
+              username:
+                serverConfig.auth.username != null
+                  ? this.envManager?.expand(serverConfig.auth.username)
+                  : undefined,
+              password:
+                serverConfig.auth.password != null
+                  ? this.envManager?.expand(serverConfig.auth.password)
+                  : undefined,
+              token:
+                serverConfig.auth.token != null
+                  ? this.envManager?.expand(serverConfig.auth.token)
+                  : undefined,
+            }
+          : undefined;
+
+        const staticHeaders = buildAuthHeaders(expandedHeaders, expandedAuth);
+
+        logger.info('SPAWN', 'Static auth headers built', {
+          spellName: name,
+          headers: staticHeaders,
+          authType: expandedAuth?.type,
+        });
+
+        // Create OAuth provider if needed (Client Credentials, Private Key JWT)
+        // For client_credentials, this will pre-fetch the token
+        const authProvider = createAuthProvider(expandedAuth);
+
+        logger.info('SPAWN', 'Auth provider created', {
+          spellName: name,
+          hasAuthProvider: !!authProvider,
+        });
+
+        // Use SSEClientTransport for SSE (old protocol)
+        mcpTransport = new SSEClientTransport(new URL(serverConfig.url), {
+          authProvider,
+          requestInit: {
+            headers: staticHeaders,
+          },
+        });
+
+        client = new Client(
           {
-            spellName: name,
-            transport,
-            url: serverConfig.url,
-            hasAuth: serverConfig.auth != null,
+            name: `grimoire-${name}`,
+            version: '1.0.0',
+          },
+          {
+            capabilities: {},
           }
         );
+
+        await client.connect(mcpTransport);
+
+        logger.info('SPAWN', 'SSE MCP server connected (SSEClientTransport)', {
+          spellName: name,
+          transport,
+          authType: serverConfig.auth?.type || 'none',
+          hasAuthProvider: !!authProvider,
+        });
+      } else if (transport === 'http') {
+        // HTTP transport (NEW MCP protocol 2025-03-26: Streamable HTTP)
+        if (!('url' in config.server)) {
+          throw new ProcessSpawnError('HTTP transport requires url', name);
+        }
+
+        const serverConfig = config.server;
+
+        logger.info('SPAWN', 'Connecting to HTTP MCP server (Streamable HTTP)', {
+          spellName: name,
+          transport,
+          url: serverConfig.url,
+          hasAuth: serverConfig.auth != null,
+        });
 
         // Expand environment variables in headers
         let expandedHeaders: Record<string, string> | undefined;

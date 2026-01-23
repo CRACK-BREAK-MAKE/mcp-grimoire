@@ -10,18 +10,30 @@
 
 ## Server Tool Registry
 
-### 1. Basic Auth HTTP/SSE (Project Management)
+### 1. Basic Auth HTTP/SSE (Project Management / File Storage)
 
-**Server**: `servers.basic_auth.http_server` / `servers.basic_auth.sse_server`
+**Server HTTP**: `servers.basic_auth.http_server`
+**Server SSE**: `servers.basic_auth.sse_server`
 **Port**: 8017 (HTTP), 8018 (SSE)
-**Domain**: Project Management
-**Tools**:
+
+**HTTP Domain**: Project Management
+**HTTP Tools**:
 
 - `create_project` - Create a new project with tasks and milestones
 - `add_task` - Add a task to an existing project
 - `get_project_status` - Get current status and progress of a project
 
-**Query Pattern**: `"create project and add task to get project status"`
+**HTTP Query Pattern**: `"create project and add task to get project status"`
+
+**SSE Domain**: File Storage Service
+**SSE Tools**:
+
+- `upload_file` - Upload a file to cloud storage with metadata
+- `list_files` - List all files in a specific folder
+- `get_file_info` - Get detailed information about a specific file
+- `delete_file` - Delete a file from storage
+
+**SSE Query Pattern**: `"upload file list files and get file info for storage"`
 
 ---
 
@@ -55,18 +67,18 @@
 
 ---
 
-### 4. Security Keys HTTP (Data Analytics)
+### 4. Security Keys HTTP (Database Query Tool)
 
 **Server**: `servers.security_keys.http_server`
 **Port**: 8021
-**Domain**: Data Analytics / Database Operations
+**Domain**: Database Query Tool / SQL Operations
 **Tools**:
 
-- `analyze_dataset` - Analyze dataset with various analysis types
+- `run_sql_query` - Execute a SQL query and return the results
 - `get_table_schema` - Get database table schema and structure
 - `export_query_results` - Export query results to various formats
 
-**Query Pattern**: `"analyze dataset get table schema and export query results"`
+**Query Pattern**: `"run sql query get table schema and export query results"`
 
 ---
 
@@ -74,29 +86,29 @@
 
 **Server**: `servers.security_keys.sse_server`
 **Port**: 8022
-**Domain**: Data Analytics / Database Operations
-**Tools**: Same as Security Keys HTTP
+**Domain**: Data Analytics / Statistical Analysis
+**Tools**:
 
-- `analyze_dataset`
-- `get_table_schema`
-- `export_query_results`
+- `analyze_dataset` - Analyze dataset with various analysis types
+- `generate_report` - Generate analytical report from data source
+- `calculate_statistics` - Calculate statistical measures on data points
 
-**Query Pattern**: `"use sse to analyze dataset export query get table schema"`
+**Query Pattern**: `"analyze dataset generate report and calculate statistics"`
 
 ---
 
-### 6. No Auth HTTP (System Monitor)
+### 6. No Auth HTTP (Math/Utility Tools)
 
 **Server**: `servers.no_auth.http_server`
 **Port**: 8023
-**Domain**: System Monitoring
+**Domain**: Math and Utility Operations
 **Tools**:
 
-- `get_cpu_usage` - Get CPU usage statistics and metrics
-- `get_memory_stats` - Get memory usage and available RAM
-- `get_disk_usage` - Get disk space usage by path
+- `calculate` - Evaluate mathematical expressions
+- `convert_units` - Convert values between different units
+- `generate_random` - Generate random numbers or strings
 
-**Query Pattern**: `"get cpu usage memory stats and disk usage for system monitoring"`
+**Query Pattern**: `"calculate expression convert units and generate random numbers"`
 
 ---
 
@@ -105,13 +117,13 @@
 **Server**: `servers.no_auth.sse_server`
 **Port**: 8024
 **Domain**: System Monitoring
-**Tools**: Same as No Auth HTTP
+**Tools**:
 
-- `get_cpu_usage`
-- `get_memory_stats`
-- `get_disk_usage`
+- `get_cpu_usage` - Get CPU usage statistics and metrics
+- `get_memory_stats` - Get memory usage and available RAM
+- `get_disk_usage` - Get disk space usage by path
 
-**Query Pattern**: `"use sse to monitor cpu memory disk usage statistics"`
+**Query Pattern**: `"use sse to get cpu usage memory stats and disk usage"`
 
 ---
 
