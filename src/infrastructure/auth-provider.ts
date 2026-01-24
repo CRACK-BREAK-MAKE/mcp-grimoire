@@ -11,6 +11,7 @@
 
 import type { AuthConfig } from '../core/types.js';
 import { logger } from '../utils/logger.js';
+import { maskSensitive, maskBase64, maskAuthHeader } from '../utils/mask-sensitive.js';
 import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
 import {
   ClientCredentialsProvider,
@@ -87,11 +88,10 @@ export function buildAuthHeaders(
     headers['Authorization'] = `Bearer ${credentials}`;
 
     logger.info('AUTH', 'Built Basic Auth as Bearer token (FastMCP compatibility)', {
-      username: expandedUsername,
-      credentialsBase64: credentials,
+      username: maskSensitive(expandedUsername, 8),
+      credentialsBase64: maskBase64(credentials),
       note: 'Sending as Bearer token due to FastMCP limitation',
-      authorizationHeader: headers['Authorization'],
-      decodedForVerification: Buffer.from(credentials, 'base64').toString('utf-8'),
+      authorizationHeader: maskAuthHeader(headers['Authorization']),
     });
   }
 

@@ -8,6 +8,7 @@ import type { SpellConfig } from '../core/types';
 import type { ActiveSpell, Tool } from '../core/types';
 import { logger } from '../utils/logger';
 import { normalizeCommand } from '../utils/cross-platform';
+import { maskHeaders } from '../utils/mask-sensitive.js';
 import type { EmbeddingStorage } from '../infrastructure/embedding-storage';
 import { buildAuthHeaders, createAuthProvider } from '../infrastructure/auth-provider.js';
 import type { EnvManager } from '../infrastructure/env-manager';
@@ -499,7 +500,7 @@ export class ProcessLifecycleManager {
 
         logger.info('SPAWN', 'Static auth headers built', {
           spellName: name,
-          headers: staticHeaders,
+          headers: maskHeaders(staticHeaders),
           authType: expandedAuth?.type,
         });
 
@@ -635,7 +636,7 @@ export class ProcessLifecycleManager {
 
         logger.info('SPAWN', 'Static auth headers built', {
           spellName: name,
-          headers: staticHeaders,
+          headers: maskHeaders(staticHeaders),
           authType: expandedAuth?.type,
         });
 

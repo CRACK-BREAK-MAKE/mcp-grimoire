@@ -10,6 +10,16 @@
 
 ---
 
+## 📺 Video Tutorial
+
+**New to MCP Grimoire?** Watch this comprehensive walkthrough:
+
+[![MCP Grimoire Tutorial](https://img.youtube.com/vi/1N0RN4f5EuA/maxresdefault.jpg)](https://youtu.be/1N0RN4f5EuA)
+
+🎥 [**Watch on YouTube: MCP Grimoire - Complete Setup & Usage Guide**](https://youtu.be/1N0RN4f5EuA)
+
+---
+
 ## 🎯 What is MCP Grimoire?
 
 **MCP Grimoire** is an intelligent orchestrator for [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers. It acts as a smart gateway between AI agents (like Claude Desktop, GitHub Copilot) and your MCP tools, solving critical performance and usability problems in AI-powered development workflows.
@@ -54,8 +64,8 @@ MCP Grimoire achieves **97% token reduction** through:
 
 ### Prerequisites
 
-- **Node.js** 18+ (for running MCP servers)
-- **Claude Desktop** or **GitHub Copilot** (AI agent with MCP support)
+- **Node.js** 22+ (for running MCP servers)
+- **Claude Desktop** or **GitHub Copilot** (Any AI agent with MCP support)
 - Basic understanding of command-line tools
 
 ### Setup Workflow
@@ -74,8 +84,7 @@ MCP Grimoire achieves **97% token reduction** through:
 Run the interactive wizard (recommended for all users):
 
 ```bash
-# Interactive mode - wizard guides you step-by-step
-npx @crack-break-make/mcp-grimoire create
+npx @crack-break-make/mcp-grimoire@latest create
 ```
 
 The wizard will:
@@ -85,11 +94,11 @@ The wizard will:
 - ✅ Auto-generate keywords from discovered tools
 - ✅ Create intelligent steering instructions
 - ✅ **Prevent spell creation if server can't be reached**
-- ✅ Save spell to `~/.grimoire/yourspell.spell.yaml`
+- ✅ Save spell to `(user.home)/.grimoire/yourspell.spell.yaml`
 
 **Why probe matters**: If probing fails, the spell is NOT created (prevents broken configs).
 
-**List your spells**: `npx @crack-break-make/mcp-grimoire list`
+**List your spells**: `npx @crack-break-make/mcp-grimoire@latest list`
 
 ### 2. Configure MCP Server (in Claude Desktop / GitHub Copilot)
 
@@ -110,10 +119,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "grimoire": {
       "command": "npx",
-      "args": ["-y", "@crack-break-make/mcp-grimoire"],
-      "env": {
-        "GRIMOIRE_DEBUG": "true"
-      }
+      "args": ["-y", "@crack-break-make/mcp-grimoire"]
     }
   }
 }
@@ -121,8 +127,7 @@ Add to your `claude_desktop_config.json`:
 
 **Configuration Options**:
 
-- `GRIMOIRE_DEBUG`: Set to `"true"` to enable detailed logging (useful for troubleshooting)
-- `env`: Pass environment variables to Grimoire and spawned spell servers
+- Environment variable`GRIMOIRE_DEBUG`: Set to `"true"` to enable detailed logging (useful for troubleshooting)
 
 **Restart Claude Desktop** - Grimoire MCP server is now running!
 
@@ -133,10 +138,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "grimoire": {
       "command": "npx",
-      "args": ["-y", "@crack-break-make/mcp-grimoire"],
-      "env": {
-        "GRIMOIRE_DEBUG": "true"
-      }
+      "args": ["-y", "@crack-break-make/mcp-grimoire"]
     }
   }
 }
@@ -148,22 +150,14 @@ Add to your `claude_desktop_config.json`:
 
 ```bash
 # List installed spells
-npx @crack-break-make/mcp-grimoire list
+npx @crack-break-make/mcp-grimoire@latest list
 
 # Validate a spell configuration
-npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
+npx @crack-break-make/mcp-grimoire@latest validate ~/.grimoire/postgres.spell.yaml
 
 # Show help
-npx @crack-break-make/mcp-grimoire --help
+npx @crack-break-make/mcp-grimoire@latest --help
 ```
-
-**Note**: Most users should use interactive mode (`create` without args) rather than CLI mode with arguments.
-
-**Key Point**:
-
-- 🖥️ **MCP Server** runs inside Claude Desktop (configured via mcp.json with `-y` flag)
-- 💻 **CLI Commands** run in your terminal with command arguments (create, list, etc.)
-- Same package, two modes - automatically detected based on stdin and arguments!
 
 ### 4. Use in Claude or Copilot
 
@@ -175,7 +169,7 @@ Show me all users from the database
 
 Grimoire will automatically:
 
-- Match your query to the right spell ("postgres")
+- Match your query to the right spell ("postgres"), if you configured it
 - Spawn the MCP server with authentication
 - Provide tools to Claude/Copilot
 - Inject steering guidance for best practices
@@ -191,40 +185,6 @@ MCP Grimoire intelligently detects how it's being called using a **3-step detect
 | **MCP Server**      | From `mcp.json` with stdio pipes    | Runs as MCP gateway for AI agents | Claude Desktop / Copilot spawns it automatically |
 | **Interactive CLI** | From terminal with `create` command | Easy spell creation with wizard   | ⭐ **All users - recommended!**                  |
 | **Advanced CLI**    | From terminal with other arguments  | Manage spell configurations       | ⚠️ Power users only                              |
-
-**You only install once** - the entry point (`dist/index.js`) detects the mode automatically.
-
-### Detection Logic (matches MCP best practices)
-
-1. **Args First**: If CLI arguments provided (e.g., `--help`, `list`, `validate`) → **CLI Mode**
-2. **Interactive**: If `create` command without args → **Interactive Wizard** (⭐ recommended!)
-3. **TTY Check**: If no args but running in terminal (TTY) → **CLI Mode** (shows help)
-4. **Default**: If stdin is piped from MCP client → **MCP Server Mode**
-
-This prevents the server from hanging if you accidentally run `npx mcp-grimoire` with no arguments.
-
-### Configuration Examples
-
-#### Claude Desktop
-
-Already configured above in Step 2.
-
-#### GitHub Copilot (VS Code)
-
-Add to `.vscode/mcp.json` or project `mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "grimoire": {
-      "command": "npx",
-      "args": ["-y", "@crack-break-make/mcp-grimoire"]
-    }
-  }
-}
-```
-
-**Then use interactive mode in terminal** to create spells (same as above).
 
 ---
 
@@ -315,21 +275,6 @@ Grimoire uses a **confidence-based approach** to decide when to auto-spawn vs as
 **20% of queries** hit medium confidence (AI agent picks from context)<br>
 **10% of queries** need clarification
 
-### Probe Feature (Automatic Discovery)
-
-**Probing is AUTOMATIC and ENABLED BY DEFAULT** during interactive spell creation:
-
-1. **Validates server connection** with provided authentication
-2. **Calls `tools/list`** to discover available tools
-3. **Auto-generates keywords** from tool names (e.g., `query_database` → `["query", "database"]`)
-4. **Creates description** from server info and tool summaries
-5. **Generates steering** with tool schemas, security guidance, best practices
-6. **Prevents spell creation** if server can't be reached
-
-**Why this matters**: If the server can't be reached or authentication fails, the spell will NOT be created. This prevents polluting your `~/.grimoire/` folder with broken configurations.
-
-**Result**: Fully configured spell with intelligent defaults - no manual keyword/steering entry needed!
-
 ---
 
 ## 🧙 Creating Your First Spell
@@ -354,7 +299,7 @@ The interactive wizard guides you through:
 1. **Spell name** (e.g., `postgres`, `github-api`, `weather-service`)
 2. **Transport type** (stdio, SSE, or HTTP)
 3. **Server configuration** (command/args for stdio, URL for HTTP/SSE)
-4. **Authentication** (No auth, Bearer token, Basic auth, Security keys)
+4. **Authentication** (No auth, Bearer token, Basic auth)
 5. **Environment variables** (for secrets and credentials)
 6. **Server validation** (automatic - probes server and auto-generates config)
 
@@ -373,7 +318,7 @@ The interactive wizard guides you through:
 
 #### Example 1: Stdio Server (No Authentication)
 
-Create `~/.grimoire/postgres.spell.yaml`:
+Create `(user.home)/.grimoire/postgres.spell.yaml`:
 
 ```yaml
 name: postgres
@@ -415,7 +360,7 @@ steering: |
 
 #### Example 2: HTTP Server (Bearer Token Authentication)
 
-Create `~/.grimoire/weather-api.spell.yaml`:
+Create `(user.home)/.grimoire/weather-api.spell.yaml`:
 
 ```yaml
 name: weather-api
@@ -450,7 +395,7 @@ steering: |
 
 #### Example 3: SSE Server (Custom Headers Authentication)
 
-Create `~/.grimoire/github-api.spell.yaml`:
+Create `(user.home)/.grimoire/github-api.spell.yaml`:
 
 ```yaml
 name: github-api
@@ -489,7 +434,7 @@ steering: |
 
 ### Environment Variables
 
-For servers requiring authentication, **always use environment variable expansion**:
+For servers requiring authentication, **always use environment variable expansion** in your spell files:
 
 ```yaml
 server:
@@ -510,35 +455,24 @@ server:
 
 **Setting Environment Variables**:
 
-**macOS/Linux** (in `~/.zshrc` or `~/.bashrc`):
+Create a `.env` file at `(user.home)/.grimoire/.env` with your secrets:
 
 ```bash
-export GITHUB_PAT="ghp_your_token_here"
-export WEATHER_KEY="your_weather_api_key"
-export DATABASE_URL="postgresql://user:pass@localhost/db"
-```
-
-**Windows** (PowerShell):
-
-```powershell
-$env:GITHUB_PAT="ghp_your_token_here"
-$env:WEATHER_KEY="your_weather_api_key"
-$env:DATABASE_URL="postgresql://user:pass@localhost/db"
-```
-
-Or create a `.env` file in your project (never commit to git):
-
-```bash
+# (user.home)/.grimoire/.env
 GITHUB_PAT=ghp_your_token_here
 WEATHER_KEY=your_weather_api_key
 DATABASE_URL=postgresql://user:pass@localhost/db
+DB_PASSWORD=your_secure_password
+STRIPE_SECRET=sk_test_your_stripe_key
+ENTERPRISE_CLIENT_ID=your_oauth_client_id
+ENTERPRISE_SECRET=your_oauth_client_secret
 ```
 
-**Security Best Practice**: ⚠️ Never hardcode secrets in spell files. Always use `${VAR_NAME}` syntax.
+**⚠️ Important**: The `.env` file is automatically loaded by MCP Grimoire at startup. Never commit this file to version control.
 
 **Spell File Location** (all platforms):
 
-- `~/.grimoire/` (follows Claude Code convention)
+- `(user.home)/.grimoire/` (follows AI Agents convention)
   - **macOS**: `/Users/username/.grimoire/`
   - **Windows**: `C:\Users\username\.grimoire\`
   - **Linux**: `/home/username/.grimoire/`
@@ -573,7 +507,7 @@ For real-time MCP servers using Server-Sent Events:
 ```yaml
 server:
   transport: sse
-  url: http://localhost:3000/sse
+  url: https://your-sse-url/sse
 ```
 
 ### ✅ HTTP (Fully Supported)
@@ -583,10 +517,8 @@ For REST-like MCP servers:
 ```yaml
 server:
   transport: http
-  url: http://localhost:7777/mcp
+  url: https://your-http-url/mcp
 ```
-
-**Note**: Only **local MCP servers** (spawned by Grimoire) are supported in Phase 1. Remote servers (via `mcp-remote`) require different architecture and are planned for Phase 2.
 
 ---
 
@@ -744,24 +676,6 @@ server:
 
 **For now, use Bearer Token or Security Keys for most OAuth scenarios** by obtaining tokens manually.
 
-### Environment Variable Expansion
-
-All authentication fields support environment variable expansion using `${VAR_NAME}` syntax:
-
-```yaml
-server:
-  env:
-    DATABASE_URL: ${DATABASE_URL} # Database connection string
-    API_KEY: ${WEATHER_API_KEY} # API keys
-    GITHUB_TOKEN: ${GITHUB_PAT} # Personal access tokens
-    OAUTH_SECRET: ${OAUTH_CLIENT_SECRET} # OAuth secrets
-```
-
-**Security Best Practice**: Never hardcode secrets in spell files. Always use environment variables.
-
-**Spell File Location**: `~/.grimoire/*.spell.yaml` (not committed to version control)
-**Environment File**: Create a `.env` file in your project or set system environment variables
-
 ---
 
 ## ⚡ When Servers Are Spawned and Killed
@@ -823,26 +737,26 @@ If (currentTurn - lastUsedTurn) >= 5:
 
 **Important**: CLI commands run in your **terminal**, not in Claude Desktop. The MCP server runs inside Claude automatically.
 
-### `npx @crack-break-make/mcp-grimoire create`
+### `npx @crack-break-make/mcp-grimoire@latest create`
 
 Create new spell configurations with interactive wizard:
 
 ```bash
 # Interactive mode (guided) - RECOMMENDED
-npx @crack-break-make/mcp-grimoire create
+npx @crack-break-make/mcp-grimoire@latest create
 
 # With server validation (auto-generates steering)
-npx @crack-break-make/mcp-grimoire create --probe
+npx @crack-break-make/mcp-grimoire@latest create --probe
 
 # Non-interactive mode
-npx @crack-break-make/mcp-grimoire create \
+npx @crack-break-make/mcp-grimoire@latest create \
   -n postgres \
   -t stdio \
   --command npx \
   --args "-y" "@modelcontextprotocol/server-postgres"
 
 # With environment variables (for authenticated servers)
-npx @crack-break-make/mcp-grimoire create \
+npx @crack-break-make/mcp-grimoire@latest create \
   -n github \
   -t stdio \
   --command npx \
@@ -853,7 +767,7 @@ npx @crack-break-make/mcp-grimoire create \
 **Optional**: Install globally for shorter command:
 
 ```bash
-npm install -g @crack-break-make/mcp-grimoire
+npm install -g @crack-break-make/mcp-grimoire@latest
 
 # Now use short form:
 grimoire create
@@ -868,16 +782,16 @@ grimoire list
 - Supports environment variables for authenticated servers
 - Supports all transport types (stdio, SSE, HTTP)
 
-### `npx @crack-break-make/mcp-grimoire list`
+### `npx @crack-break-make/mcp-grimoire@latest list`
 
 List all installed spells:
 
 ```bash
 # Simple list
-npx @crack-break-make/mcp-grimoire list
+npx @crack-break-make/mcp-grimoire@latest list
 
 # Verbose output with details
-npx @crack-break-make/mcp-grimoire list -v
+npx @crack-break-make/mcp-grimoire@latest list -v
 ```
 
 **Output**:
@@ -892,12 +806,12 @@ npx @crack-break-make/mcp-grimoire list -v
 ✓ Total: 3 spells
 ```
 
-### `npx @crack-break-make/mcp-grimoire validate`
+### `npx @crack-break-make/mcp-grimoire@latest validate`
 
 Validate spell configuration:
 
 ```bash
-npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
+npx @crack-break-make/mcp-grimoire@latest validate ~/.grimoire/postgres.spell.yaml
 ```
 
 **Checks**:
@@ -906,18 +820,6 @@ npx @crack-break-make/mcp-grimoire validate ~/.grimoire/postgres.spell.yaml
 - Field types and formats
 - Minimum 3 keywords
 - Transport-specific requirements
-
-### `npx @crack-break-make/mcp-grimoire example`
-
-Generate example templates:
-
-```bash
-# Output to stdout
-npx @crack-break-make/mcp-grimoire example stdio
-
-# Output to file
-npx @crack-break-make/mcp-grimoire example stdio -o ~/.grimoire/myspell.spell.yaml
-```
 
 ---
 
@@ -952,8 +854,6 @@ Same workflow as Claude Desktop. Add to `settings.json`:
 }
 ```
 
-**Note**: Copilot support depends on VS Code's MCP implementation maturity.
-
 ---
 
 ## 📊 Token Savings Breakdown
@@ -968,8 +868,6 @@ All 50 servers spawned at startup:
 - ... 47 more servers
 = ~40,000 tokens per conversation
 ```
-
-**Cost**: ~$0.20 per query (GPT-4 pricing)
 
 ### Grimoire (Multi-Tier Strategy)
 
@@ -987,8 +885,6 @@ Average = 0.70×1000 + 0.20×1500 + 0.08×2000 + 0.02×300
 ```
 
 **Savings**: `(40,000 - 1,166) / 40,000 = 97.1%` 🎉
-
-**Cost**: ~$0.006 per query (33× cheaper!)
 
 ---
 
@@ -1098,9 +994,7 @@ mcp-grimoire/
 │   └── fixtures/                # Test spell configurations
 ├── docs/
 │   ├── adr/                     # Architecture Decision Records
-│   ├── architecture.md          # System architecture
-│   └── CLAUDE.md                # Development guide
-└── examples/                    # Example spell configs
+│   └── architecture.md          # System architecture
 ```
 
 ### Creating Architecture Decision Records (ADRs)

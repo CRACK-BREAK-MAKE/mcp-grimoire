@@ -1,18 +1,18 @@
 /**
- * Integration Test: CLI create with stdio @ui5/mcp-server with environment variables
+ * Integration Test: CLI create with stdio filesystem server with environment variables
  *
  * PURPOSE:
  * Tests spell creation for stdio transport WITH environment variables.
  * Validates environment variable transformation and server.env configuration.
  *
  * MCP SERVER USED:
- * - Package: @ui5/mcp-server
- * - Name: "UI5 MCP" (SAPUI5/OpenUI5 development tools)
+ * - Package: @modelcontextprotocol/server-filesystem
+ * - Name: "Filesystem MCP" (official MCP filesystem server)
  * - Transport: stdio (local command execution)
  * - Auth: None (local process)
  * - Command: npx
- * - Args: ["@ui5/mcp-server"]
- * - Environment Variables: UI5_LOG_LVL=verbose
+ * - Args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+ * - Environment Variables: MCP_LOG_LEVEL=debug
  *
  * STDIO WITH ENVIRONMENT VARIABLES:
  * Some stdio MCP servers need environment variables for:
@@ -22,25 +22,25 @@
  * - Feature flags
  *
  * ENVIRONMENT VARIABLE TRANSFORMATION:
- * User provides: --env "UI5_LOG_LVL=verbose"
+ * User provides: --env "GRIMOIRE_DEBUG=true"
  * Result in spell file:
  * ```yaml
  * server:
  *   transport: stdio
  *   command: npx
- *   args: ["@ui5/mcp-server"]
+ *   args: ["-y", "@crack-break-make/mcp-grimoire@rc"]
  *   env:
- *     UI5_LOG_LVL: "${UI5_MCP__UI5_LOG_LVL}"
+ *     GRIMOIRE_DEBUG: "${GRIMOIRE_MCP__GRIMOIRE_DEBUG}"
  * ```
  *
  * Result in .env file:
  * ```
- * UI5_MCP__UI5_LOG_LVL=verbose
+ * GRIMOIRE_MCP__GRIMOIRE_DEBUG=true
  * ```
  *
  * NAMESPACING PATTERN:
- * - Original: UI5_LOG_LVL
- * - Namespaced: UI5_MCP__UI5_LOG_LVL
+ * - Original: GRIMOIRE_DEBUG
+ * - Namespaced: GRIMOIRE_MCP__GRIMOIRE_DEBUG
  * - Spell name prefix prevents variable collisions
  * - Double underscore (__) separates namespace from variable
  *
@@ -52,18 +52,17 @@
  * 5. ✓ Validate steering generated from probe (if enabled)
  * 6. ✓ Verify keywords populated from tools
  *
- * UI5 MCP SERVER CAPABILITIES:
- * - Create SAPUI5/OpenUI5 applications
- * - Run UI5 linter (detect deprecated APIs)
- * - Validate manifest.json files
- * - Get UI5 API reference documentation
- * - Create Integration Cards
+ * FILESYSTEM MCP CAPABILITIES:
+ * - read_file: Read file contents
+ * - write_file: Write to files
+ * - list_directory: List directory contents
+ * - create_directory: Create new directories
  *
  * COMPARISON:
  * - CAP.js test: stdio WITHOUT env vars (simple)
- * - UI5 test: stdio WITH env vars (complex)
+ * - Filesystem test: stdio WITH env vars (complex)
  *
- * NO MOCKS - Tests against real UI5 MCP server with environment variables
+ * NO MOCKS - Tests against real filesystem MCP server with environment variables
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -84,8 +83,8 @@ import * as os from 'os';
 
 const isWindows = os.platform() === 'win32';
 
-describe.skipIf(isWindows)('CLI create - stdio UI5 with env', () => {
-  const testSpellName = 'ui5-mcp';
+describe.skipIf(isWindows)('CLI create - stdio filesystem with env', () => {
+  const testSpellName = 'filesystem-mcp';
   let grimoireDir: string;
   let spellFilePath: string;
   let envFilePath: string;
@@ -113,9 +112,9 @@ describe.skipIf(isWindows)('CLI create - stdio UI5 with env', () => {
       name: testSpellName,
       transport: 'stdio',
       command: 'npx',
-      args: ['-y', '@ui5/mcp-server'],
+      args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
       env: {
-        UI5_LOG_LVL: 'verbose',
+        MCP_LOG_LEVEL: 'debug',
       },
       interactive: false,
       probe: true, // Enable probing to validate stdio server works
@@ -150,18 +149,24 @@ describe.skipIf(isWindows)('CLI create - stdio UI5 with env', () => {
 
     // Validate stdio config - transport should be 'stdio' as requested
     // Note: args include '-y' flag for npx auto-accept
-    validateStdioServerConfig(spell, 'npx', ['-y', '@ui5/mcp-server'], 'stdio');
+    validateStdioServerConfig(
+      spell,
+      'npx',
+      ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
+      'stdio'
+    );
 
     // ASSERT: Validate env vars transformation (literal → placeholder in spell, literal in .env)
     const envVars = validateEnvVarsInSpell(spell, {
-      UI5_LOG_LVL: 'verbose',
+      MCP_LOG_LEVEL: 'debug',
     });
 
     // ASSERT: Validate env var is stored as placeholder in spell
     expect(spell.server.env, 'server.env should be defined').toBeDefined();
-    expect(spell.server.env!.UI5_LOG_LVL, 'server.env.UI5_LOG_LVL should be a placeholder').toMatch(
-      /^\${[A-Z_][A-Z0-9_]*}$/
-    );
+    expect(
+      spell.server.env!.MCP_LOG_LEVEL,
+      'server.env.MCP_LOG_LEVEL should be a placeholder'
+    ).toMatch(/^\${[A-Z_][A-Z0-9_]*}$/);
 
     // ASSERT: Validate no auth or headers for stdio
     expect(spell.server.auth, 'server.auth should be undefined for stdio').toBeUndefined();
@@ -174,14 +179,14 @@ describe.skipIf(isWindows)('CLI create - stdio UI5 with env', () => {
     expect(existsSync(envFilePath), '.env file should exist').toBe(true);
     const envFile = await readEnvFile(envFilePath);
     validateEnvFileLiterals(envFile, {
-      [envVars.UI5_LOG_LVL]: 'verbose',
+      [envVars.MCP_LOG_LEVEL]: 'debug',
     });
 
     // ASSERT: Validate the env var in .env is NOT a placeholder (should be literal)
-    expect(envFile[envVars.UI5_LOG_LVL], '.env value should be literal, not placeholder').toBe(
-      'verbose'
+    expect(envFile[envVars.MCP_LOG_LEVEL], '.env value should be literal, not placeholder').toBe(
+      'debug'
     );
-    expect(envFile[envVars.UI5_LOG_LVL], '.env value should not contain ${ }').not.toMatch(/\${/);
+    expect(envFile[envVars.MCP_LOG_LEVEL], '.env value should not contain ${ }').not.toMatch(/\${/);
 
     // ASSERT: Validate steering was generated from probe
     expect(spell.steering, 'spell.steering should be defined after probe').toBeDefined();
