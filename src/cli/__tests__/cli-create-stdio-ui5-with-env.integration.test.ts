@@ -83,7 +83,8 @@ import { createCommand, type CreateOptions } from '../commands/create';
 import * as os from 'os';
 
 const isWindows = os.platform() === 'win32';
-describe('CLI create - stdio UI5 with env', () => {
+
+describe.skipIf(isWindows)('CLI create - stdio UI5 with env', () => {
   const testSpellName = 'ui5-mcp';
   let grimoireDir: string;
   let spellFilePath: string;

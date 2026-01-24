@@ -26,7 +26,7 @@ export const FASTMCP_PORTS = {
   CREDENTIAL_LEAK_HTTP: 8014,
   FILE_CONFLICTS_SSE: 8015,
   SECURITY_LOGGING_HTTP: 8016,
-  API_KEY_HTTP_HEADER: 8050, // Dedicated port for api-key-http-header test (custom header pattern)
+  API_KEY_HTTP_HEADER: 8052, // Dedicated port for api-key-http-header test (custom header pattern) - Changed from 8050 to avoid conflict with gateway-low-confidence test
 
   // Gateway Integration Test Ports (8017-8050)
   // Test File 1: gateway-intent-resolution.e2e.test.ts
