@@ -19,6 +19,11 @@ describe('SpellWatcher', () => {
   let mockRouter: any;
   let mockOnToolsChanged: any;
 
+  // Platform-specific timeouts (Windows FS events are slower)
+  const isWindows = process.platform === 'win32';
+  const WATCHER_READY_MS = isWindows ? 1000 : 500;
+  const FILE_STABILIZE_MS = isWindows ? 2500 : 1200; // awaitWriteFinish (300ms) + debounce (500ms) + buffer
+
   beforeEach(() => {
     // Create temporary test directory
     testDir = join(tmpdir(), `power-watcher-test-${Date.now()}`);
@@ -108,14 +113,14 @@ describe('SpellWatcher', () => {
 
       watcher.start();
       // Wait for watcher ready
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, WATCHER_READY_MS));
 
       // Create new file
       const filePath = join(testDir, 'test-power.spell.yaml');
       writeFileSync(filePath, 'name: test-power\nversion: 1.0.0', 'utf-8');
 
       // Wait for: awaitWriteFinish (300ms) + debounce (500ms) + processing
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Verify calls
       expect(mockDiscovery.scan).toHaveBeenCalled();
@@ -161,12 +166,12 @@ describe('SpellWatcher', () => {
       mockLifecycle.isActive.mockReturnValue(false);
 
       watcher.start();
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, WATCHER_READY_MS));
 
       // Create file first
       const filePath = join(testDir, 'modified-power.spell.yaml');
       writeFileSync(filePath, 'name: modified-power\nversion: 1.0.0', 'utf-8');
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Reset mocks before modification
       mockResolver.removeSpell.mockClear();
@@ -174,7 +179,7 @@ describe('SpellWatcher', () => {
 
       // Modify file
       writeFileSync(filePath, 'name: modified-power\nversion: 2.0.0', 'utf-8');
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Verify delete-and-recreate strategy
       expect(mockResolver.removeSpell).toHaveBeenCalledWith('modified-power');
@@ -202,11 +207,11 @@ describe('SpellWatcher', () => {
       mockLifecycle.kill.mockResolvedValue(undefined);
 
       watcher.start();
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, WATCHER_READY_MS));
 
       const filePath = join(testDir, 'active-power.spell.yaml');
       writeFileSync(filePath, 'name: active-power\nversion: 1.0.0', 'utf-8');
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Reset mocks before modification
       mockLifecycle.kill.mockClear();
@@ -214,7 +219,7 @@ describe('SpellWatcher', () => {
       mockOnToolsChanged.mockClear();
 
       writeFileSync(filePath, 'name: active-power\nversion: 2.0.0', 'utf-8');
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Verify lifecycle calls
       expect(mockLifecycle.kill).toHaveBeenCalledWith('active-power');
@@ -231,16 +236,16 @@ describe('SpellWatcher', () => {
       mockLifecycle.isActive.mockReturnValue(false);
 
       watcher.start();
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, WATCHER_READY_MS));
 
       // Create file first
       const filePath = join(testDir, 'deleted-power.spell.yaml');
       writeFileSync(filePath, 'name: deleted-power\nversion: 1.0.0', 'utf-8');
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Delete file
       unlinkSync(filePath);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Verify removal
       expect(mockResolver.removeSpell).toHaveBeenCalledWith('deleted-power');
@@ -252,11 +257,11 @@ describe('SpellWatcher', () => {
       mockLifecycle.kill.mockResolvedValue(undefined);
 
       watcher.start();
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, WATCHER_READY_MS));
 
       const filePath = join(testDir, 'active-deleted.spell.yaml');
       writeFileSync(filePath, 'name: active-deleted\nversion: 1.0.0', 'utf-8');
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       // Reset mocks before deletion
       mockLifecycle.kill.mockClear();
@@ -264,7 +269,7 @@ describe('SpellWatcher', () => {
       mockOnToolsChanged.mockClear();
 
       unlinkSync(filePath);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, FILE_STABILIZE_MS));
 
       expect(mockLifecycle.kill).toHaveBeenCalledWith('active-deleted');
       expect(mockRouter.unregisterTools).toHaveBeenCalledWith('active-deleted');

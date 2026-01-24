@@ -111,9 +111,15 @@ export async function isPortInUse(port: number): Promise<boolean> {
  * Wait for port to become available (server started)
  */
 export async function waitForPort(port: number, timeoutMs: number = 15000): Promise<boolean> {
+  // Windows needs longer timeout for Python server startup
+  const adjustedTimeout = process.platform === 'win32' ? timeoutMs * 2 : timeoutMs;
   const startTime = Date.now();
-  while (Date.now() - startTime < timeoutMs) {
+  while (Date.now() - startTime < adjustedTimeout) {
     if (await isPortInUse(port)) {
+      // Extra stabilization wait on Windows to ensure server is fully ready
+      if (process.platform === 'win32') {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
       return true;
     }
     await new Promise((resolve) => setTimeout(resolve, 200));

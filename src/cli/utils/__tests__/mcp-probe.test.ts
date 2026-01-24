@@ -174,7 +174,8 @@ describe('probeMCPServer', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Command not found');
+    // Windows returns different error (Connection closed) vs Unix (ENOENT/Command not found)
+    expect(result.error).toMatch(/Command not found|Connection closed|ENOENT/);
   });
 
   // Note: Testing successful probe requires an actual MCP server running
