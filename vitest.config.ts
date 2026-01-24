@@ -1,4 +1,9 @@
+import os from 'os';
 import { defineConfig } from 'vitest/config';
+
+// Windows needs longer timeouts due to slower process spawning in CI
+const isWindows = os.platform() === 'win32';
+const timeoutMultiplier = isWindows ? 2 : 1;
 
 export default defineConfig({
   test: {
@@ -21,8 +26,8 @@ export default defineConfig({
             'tests/**',
           ],
           globals: true,
-          testTimeout: 10000, // Unit tests should be fast
-          hookTimeout: 10000,
+          testTimeout: 10000 * timeoutMultiplier, // Unit tests should be fast (20s on Windows)
+          hookTimeout: 10000 * timeoutMultiplier,
           // Setup file that runs before each test to mock process.exit
           setupFiles: ['./src/cli/__tests__/helpers/setup-test-env.ts'],
         },
@@ -42,8 +47,8 @@ export default defineConfig({
             'tests/**/*.integration.test.ts',
           ],
           globals: true,
-          testTimeout: 60000, // Integration tests can be slower
-          hookTimeout: 60000,
+          testTimeout: 60000 * timeoutMultiplier, // Integration tests can be slower (120s on Windows)
+          hookTimeout: 60000 * timeoutMultiplier,
           // Global setup/teardown for backup/restore
           globalSetup: './src/cli/__tests__/helpers/global-setup-integration.ts',
           // Setup file that runs before each test to mock process.exit

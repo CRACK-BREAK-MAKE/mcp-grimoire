@@ -29,17 +29,9 @@ export interface ProbeResult {
  */
 export async function probeMCPServer(
   config: Partial<SpellConfig>,
-  timeoutMs?: number
+  timeoutMs: number = 30000
 ): Promise<ProbeResult> {
   const transportType = config.server?.transport || 'stdio';
-
-  // Platform-specific default timeouts (Windows processes start slower)
-  if (timeoutMs === undefined) {
-    const isWindows = process.platform === 'win32';
-    // stdio needs longer timeout on Windows (npx, spawning processes)
-    // Remote servers (http/sse) use same timeout across platforms
-    timeoutMs = transportType === 'stdio' && isWindows ? 60000 : 30000;
-  }
 
   // Validate configuration based on transport
   if (transportType === 'stdio') {
