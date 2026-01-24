@@ -116,8 +116,8 @@ describe('CLI create - Security & Logging', () => {
     // Credentials should NEVER appear in logs
     expect(allLogs).not.toContain(secretToken);
 
-    // But env var NAME should appear (CLI shows 'Variables: API_TOKEN')
-    expect(allLogs).toContain('API_TOKEN');
+    // But env var NAME should appear (CLI shows 'Variables: SEC_LOG_SPELL__BEARER_TOKEN')
+    expect(allLogs).toContain('BEARER_TOKEN');
 
     // Verify spell was created and has proper structure
     expect(existsSync(spellPath)).toBe(true);

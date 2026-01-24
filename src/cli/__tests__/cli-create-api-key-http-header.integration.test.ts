@@ -60,7 +60,7 @@ import { createCommand, type CreateOptions } from '../commands/create';
 
 describe('CLI create - API Key HTTP Custom Header', () => {
   let serverProcess: ChildProcess;
-  const serverPort = FASTMCP_PORTS.SECURITY_KEYS_HTTP;
+  const serverPort = FASTMCP_PORTS.API_KEY_HTTP_HEADER;
   const serverUrl = `http://localhost:${serverPort}/mcp`;
   const testSpellName = 'database-query-header'; // Matches server: Database Query Tool v1.0 + custom header
   let grimoireDir: string;

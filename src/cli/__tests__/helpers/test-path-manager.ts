@@ -24,9 +24,8 @@
  * This module is responsible ONLY for test directory management.
  */
 
-import { join } from 'path';
 import { homedir } from 'os';
-import { rm } from 'fs/promises';
+import { join } from 'path';
 import { resetPathsCache } from '../../../utils/paths';
 
 /**
@@ -78,6 +77,8 @@ export function setupTestGrimoireDir(testName: string): string {
  * ```
  */
 export async function cleanupTestGrimoireDir(testDir: string): Promise<void> {
+  const { rm } = await import('fs/promises');
+
   // Remove test directory and all contents
   // force: true prevents error if directory doesn't exist
   await rm(testDir, { recursive: true, force: true });

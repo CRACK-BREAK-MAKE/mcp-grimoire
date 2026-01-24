@@ -1,11 +1,11 @@
 #!/bin/bash
-# Start Security Keys HTTP Server on port 8004
+# Start Security Keys HTTP Server (port from PORT env var, default 8004)
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FASTMCP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Change to fastmcp root and run with uv
+# Change to fastmcp root and run with uv, preserving PORT env var
 cd "$FASTMCP_ROOT"
-exec uv run python -m servers.security_keys.http_server
+exec env PORT="${PORT:-8004}" uv run python -m servers.security_keys.http_server

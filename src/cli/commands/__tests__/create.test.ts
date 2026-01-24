@@ -18,7 +18,13 @@ describe('createCommand', () => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
-      throw new Error(`Process.exit called with code ${code}`);
+      // Only throw on non-zero exit codes (errors)
+      // Exit code 0 (success) is expected and should not fail tests
+      if (code !== 0) {
+        throw new Error(`Process.exit called with code ${code}`);
+      }
+      // For exit code 0, just return (don't actually exit or throw)
+      return undefined as never;
     });
 
     testDir = join(tmpdir(), `grimoire-create-test-${Date.now()}`);

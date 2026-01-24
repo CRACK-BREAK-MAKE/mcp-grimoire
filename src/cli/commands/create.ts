@@ -59,7 +59,9 @@ export async function createCommand(options: CreateOptions): Promise<void> {
 
   // Preserve original CLI values BEFORE expansion (for YAML file)
   const originalEnv = Array.isArray(options.env) ? [...options.env] : options.env;
-  const originalAuthToken = options.authToken;
+  let originalAuthToken = options.authToken;
+  let originalAuthUsername = options.authUsername;
+  let originalAuthPassword = options.authPassword;
   const originalAuthClientId = options.authClientId;
   const originalAuthClientSecret = options.authClientSecret;
 
@@ -163,12 +165,13 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     // Get spell name
     if (options.name == null || options.name === '') {
       options.name = await text({
-        message: 'What is the name of your spell?',
-        default: 'my-spell',
+        message: 'Spell name (required)',
+        hint: "💡 Spell names typically match the MCP server you're connecting to\n   Examples: github, filesystem, postgres, notion, slack\n",
         validate: (value) => {
-          if (!value) return 'Spell name is required';
+          if (!value || value.trim() === '')
+            return 'Spell name is required - it identifies your MCP server';
           if (!/^[a-z0-9][a-z0-9-]*$/.test(value)) {
-            return 'Spell name must be lowercase alphanumeric with hyphens only';
+            return 'Spell name must be lowercase alphanumeric with hyphens (e.g., my-server, github-api)';
           }
           return true;
         },
@@ -204,23 +207,54 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     if (options.transport === 'stdio') {
       if (options.command == null || options.command === '') {
         options.command = await text({
-          message: 'Server command (e.g., npx, node, python):',
-          default: 'npx',
+          message: 'Server command (required)',
+          hint: '📦 The command to start your MCP server\n   Common commands: npx, node, python, or full path\n',
+          validate: (value) => {
+            if (!value || value.trim() === '') {
+              return 'Command is required to start the MCP server';
+            }
+            return true;
+          },
         });
       }
 
+      // Trim the command
+      options.command = options.command.trim();
+
       if (!options.args) {
         const argsString = await text({
-          message: 'Command arguments:',
-          default: '-y @modelcontextprotocol/server-example',
+          message: 'Command arguments (optional)',
+          default: '@modelcontextprotocol/server-example',
+          hint: '💡 For npx: the -y flag is automatically added to skip installation prompts\n   Just specify the package name\n',
         });
-        options.args = parseArgs(argsString);
+
+        if (argsString && argsString.trim()) {
+          options.args = parseArgs(argsString.trim());
+
+          // Auto-add -y flag for npx if not present
+          if (options.command === 'npx' && !options.args.includes('-y')) {
+            options.args = ['-y', ...options.args];
+            /* eslint-disable-next-line no-console */
+            console.log(formatSuccess('   ✓ Added -y flag for npx'));
+          }
+        } else {
+          options.args = [];
+        }
       }
 
       // Ask for environment variables
       if (!options.env) {
+        /* eslint-disable-next-line no-console */
+        console.log(
+          dim('\n🌍 Environment variables are injected when spawning the MCP server process')
+        );
+        /* eslint-disable-next-line no-console */
+        console.log(dim('   The server code can read these using process.env.VARIABLE_NAME'));
+        /* eslint-disable-next-line no-console */
+        console.log(dim('   Common examples: API_KEY, DATABASE_URL, GITHUB_TOKEN, AWS_REGION'));
+
         const needsEnv = await confirm({
-          message: 'Does this server require environment variables?',
+          message: 'Does this MCP server need environment variables?',
           default: false,
         });
 
@@ -228,7 +262,7 @@ export async function createCommand(options: CreateOptions): Promise<void> {
           options.env = {};
           /* eslint-disable-next-line no-console */
           console.log(
-            `\n${formatInfo('Enter environment variables (press Enter with empty name when done)')}\n`
+            `\n${formatInfo('💡 Tip: Use \${VAR_NAME} to reference variables from your shell environment')}\n`
           );
 
           while (true) {
@@ -276,24 +310,47 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     } else {
       // SSE or HTTP - remote servers MUST be probed
       if (options.url == null || options.url === '') {
-        const defaultUrl =
-          options.transport === 'sse' ? 'http://localhost:3000/sse' : 'http://localhost:3000/api';
         options.url = await text({
-          message: `Server URL:`,
-          default: defaultUrl,
+          message: `Server URL (required)`,
+          hint: '🌐 The HTTP/HTTPS endpoint where your MCP server is running\n   Example: https://api.githubcopilot.com/mcp/\n',
           validate: (value) => {
-            if (!value.startsWith('http')) {
+            if (!value || value.trim() === '') {
+              return 'URL is required for remote MCP servers';
+            }
+            const trimmed = value.trim();
+            if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
               return 'URL must start with http:// or https://';
             }
-            return true;
+            try {
+              new URL(trimmed);
+              return true;
+            } catch {
+              return 'Invalid URL format. Example: https://api.example.com/mcp';
+            }
           },
         });
       }
 
-      // Ask about authentication (supports Bearer, Basic Auth, OAuth Client Credentials)
+      // Trim the URL
+      options.url = options.url.trim();
+
+      // Ask about authentication
       if (!options.auth) {
+        /* eslint-disable-next-line no-console */
+        console.log(
+          dim('\n🔐 Authentication adds an Authorization header to every MCP server request')
+        );
+        /* eslint-disable-next-line no-console */
+        console.log(dim('   Example (GitHub MCP): Authorization: Bearer github_pat_11ABCD...'));
+        /* eslint-disable-next-line no-console */
+        console.log(
+          dim('   ⚠️  Important: Provide auth tokens here, NOT in custom headers section')
+        );
+        /* eslint-disable-next-line no-console */
+        console.log(dim("   ⚠️  Note: stdio transport doesn't need auth (uses local processes)"));
+
         const needsAuth = await confirm({
-          message: 'Does this server require authentication?',
+          message: 'Does this MCP server require authentication?',
           default: false,
         });
 
@@ -302,144 +359,108 @@ export async function createCommand(options: CreateOptions): Promise<void> {
             message: 'Authentication type:',
             options: [
               {
-                label: 'none - No Authentication',
-                value: 'none',
-                description: 'Server does not require authentication',
-              },
-              {
                 label: 'bearer - Bearer Token (API Key)',
                 value: 'bearer',
-                description: 'Use Authorization: Bearer <token> header',
+                description: 'Most common: Authorization: Bearer <token>',
               },
               {
                 label: 'basic - Basic Auth (Username + Password)',
                 value: 'basic',
-                description: 'Use Authorization: Basic header with username:password',
-              },
-              {
-                label: 'client_credentials - OAuth Client Credentials',
-                value: 'client_credentials',
-                description: 'OAuth 2.0 machine-to-machine authentication',
-              },
-              {
-                label: 'private_key_jwt - Private Key JWT',
-                value: 'private_key_jwt',
-                description: 'OAuth with JWT signed by private key (RFC 7523)',
-              },
-              {
-                label: 'static_private_key_jwt - Static Private Key JWT',
-                value: 'static_private_key_jwt',
-                description: 'OAuth with pre-built JWT assertion',
+                description: 'Authorization: Basic base64(username:password)',
               },
             ],
-            default: 'none',
+            default: 'bearer',
           });
 
           if (authType === 'bearer') {
-            const token = await text({
-              message: 'Bearer token (use ${VAR_NAME} to read from environment):',
-              default: '${API_TOKEN}',
+            const tokenValue = await text({
+              message: 'Enter your API token/key:',
+              hint: '🔐 Example: github_pat_11ABCD... or sk-1234...\n   Your token will be securely stored in ~/.grimoire/.env',
+              validate: (value) => {
+                if (!value || value.trim() === '') {
+                  return 'Bearer token is required for authentication';
+                }
+                return true;
+              },
             });
 
+            const envVarName = `${options.name.toUpperCase().replace(/-/g, '_')}__BEARER_TOKEN`;
+
+            // Store placeholder in spell file
             options.auth = {
               type: 'bearer',
-              token,
+              token: `\${${envVarName}}`,
             };
+
+            // Store literal value for .env file (will be written later)
+            options.authToken = tokenValue;
+            originalAuthToken = tokenValue; // Update for .env writing
+
+            /* eslint-disable-next-line no-console */
+            console.log(
+              formatSuccess(`   ✓ Token will be stored as ${envVarName} in ~/.grimoire/.env`)
+            );
           } else if (authType === 'basic') {
-            const username = await text({
-              message: 'Username (use ${VAR} for environment variable):',
-              default: '${API_USERNAME}',
-            });
-            const password = await text({
-              message: 'Password (use ${VAR} for environment variable):',
-              default: '${API_PASSWORD}',
+            const usernameValue = await text({
+              message: 'Enter username:',
+              hint: '🔐 Your credentials will be securely stored in ~/.grimoire/.env',
+              validate: (value) => {
+                if (!value || value.trim() === '') {
+                  return 'Username is required for basic authentication';
+                }
+                return true;
+              },
             });
 
+            const passwordValue = await text({
+              message: 'Enter password:',
+              validate: (value) => {
+                if (!value || value.trim() === '') {
+                  return 'Password is required for basic authentication';
+                }
+                return true;
+              },
+            });
+
+            const usernameEnvVar = `${options.name.toUpperCase().replace(/-/g, '_')}__API_USERNAME`;
+            const passwordEnvVar = `${options.name.toUpperCase().replace(/-/g, '_')}__API_PASSWORD`;
+
+            // Store placeholders in spell file
             options.auth = {
               type: 'basic',
-              username,
-              password,
+              username: `\${${usernameEnvVar}}`,
+              password: `\${${passwordEnvVar}}`,
             };
-          } else if (authType === 'client_credentials') {
-            const clientId = await text({
-              message: 'Client ID (use ${VAR} for environment variable):',
-              default: '${OAUTH_CLIENT_ID}',
-            });
-            const clientSecret = await text({
-              message: 'Client Secret (use ${VAR} for environment variable):',
-              default: '${OAUTH_CLIENT_SECRET}',
-            });
-            const tokenUrl = await text({
-              message: 'Token endpoint URL:',
-              default: 'https://oauth.example.com/token',
-            });
-            const needsScope = await confirm({
-              message: 'Does this OAuth flow require a scope?',
-              default: false,
-            });
-            let scope: string | undefined;
-            if (needsScope) {
-              scope = await text({
-                message: 'OAuth scope (space-separated):',
-                default: 'api.read api.write',
-              });
-            }
 
-            options.auth = {
-              type: 'client_credentials',
-              clientId,
-              clientSecret,
-              tokenUrl,
-              scope,
-            };
-          } else if (authType === 'private_key_jwt') {
-            const clientId = await text({
-              message: 'Client ID (use ${VAR} for environment variable):',
-              default: '${OAUTH_CLIENT_ID}',
-            });
-            const privateKey = await text({
-              message: 'Private Key PEM (use ${VAR} for environment variable):',
-              default: '${PRIVATE_KEY_PEM}',
-            });
-            const algorithm = await select({
-              message: 'JWT Signing Algorithm:',
-              options: [
-                { label: 'RS256 - RSA with SHA-256', value: 'RS256' },
-                { label: 'ES256 - ECDSA with SHA-256', value: 'ES256' },
-                { label: 'HS256 - HMAC with SHA-256', value: 'HS256' },
-              ],
-              default: 'RS256',
-            });
+            // Store literal values for .env file (will be written later)
+            options.authUsername = usernameValue;
+            options.authPassword = passwordValue;
+            originalAuthUsername = usernameValue; // Update for .env writing
+            originalAuthPassword = passwordValue; // Update for .env writing
 
-            options.auth = {
-              type: 'private_key_jwt',
-              clientId,
-              privateKey,
-              algorithm: algorithm as 'RS256' | 'ES256' | 'HS256',
-            };
-          } else if (authType === 'static_private_key_jwt') {
-            const clientId = await text({
-              message: 'Client ID (use ${VAR} for environment variable):',
-              default: '${OAUTH_CLIENT_ID}',
-            });
-            const jwtBearerAssertion = await text({
-              message: 'Pre-built JWT Assertion (use ${VAR} for environment variable):',
-              default: '${JWT_ASSERTION}',
-            });
-
-            options.auth = {
-              type: 'static_private_key_jwt',
-              clientId,
-              jwtBearerAssertion,
-            };
+            /* eslint-disable-next-line no-console */
+            console.log(
+              formatSuccess(
+                `   ✓ Credentials will be stored as ${usernameEnvVar} and ${passwordEnvVar}`
+              )
+            );
           }
         }
       }
 
       // Ask about custom headers
       if (!options.headers) {
+        /* eslint-disable-next-line no-console */
+        console.log(dim('\n📋 Custom HTTP headers are sent with every request to the MCP server'));
+        /* eslint-disable-next-line no-console */
+        console.log(dim('   Use cases: API versioning (X-API-Version: v1), client identification'));
+        /* eslint-disable-next-line no-console */
+        console.log(dim('   Common examples: X-Client-ID, X-Request-ID, X-Correlation-ID'));
+        /* eslint-disable-next-line no-console */
+        console.log(dim('   ⚠️  For API tokens, use Authentication section instead'));
+
         const needsHeaders = await confirm({
-          message: 'Does this server require custom headers?',
+          message: 'Does this server require custom HTTP headers?',
           default: false,
         });
 
@@ -597,6 +618,38 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     options.probe = true;
   }
 
+  // For interactive mode: temporarily set auth credentials in process.env for probing
+  // auth-provider reads from process.env, not from .env file
+  // After probe, these will be written to .env file for permanent storage
+  const tempEnvVars: string[] = [];
+  if (
+    options.probe === true &&
+    ((originalAuthToken != null && originalAuthToken !== '') ||
+      (originalAuthUsername != null && originalAuthUsername !== '') ||
+      (originalAuthPassword != null && originalAuthPassword !== ''))
+  ) {
+    const spellPrefix = options.name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+
+    // Set bearer token in process.env if present
+    if (originalAuthToken != null && originalAuthToken.trim() !== '') {
+      const varName = `${spellPrefix}__BEARER_TOKEN`;
+      process.env[varName] = originalAuthToken;
+      tempEnvVars.push(varName);
+    }
+
+    // Set basic auth credentials in process.env if present
+    if (originalAuthUsername != null && originalAuthUsername.trim() !== '') {
+      const varName = `${spellPrefix}__API_USERNAME`;
+      process.env[varName] = originalAuthUsername;
+      tempEnvVars.push(varName);
+    }
+    if (originalAuthPassword != null && originalAuthPassword.trim() !== '') {
+      const varName = `${spellPrefix}__API_PASSWORD`;
+      process.env[varName] = originalAuthPassword;
+      tempEnvVars.push(varName);
+    }
+  }
+
   // Probe the MCP server if requested
   let probeResult: Awaited<ReturnType<typeof probeMCPServer>> | null = null;
   if (options.probe === true) {
@@ -726,6 +779,11 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     }
   }
 
+  // Clean up temporary environment variables set for probing
+  for (const varName of tempEnvVars) {
+    delete process.env[varName];
+  }
+
   // Generate template
   let template: string;
   switch (options.transport) {
@@ -815,30 +873,28 @@ export async function createCommand(options: CreateOptions): Promise<void> {
           authConfig.token = originalAuthToken;
         } else {
           // Literal value - create namespaced placeholder, save to .env
-          const varName = `${spellPrefix}__API_TOKEN`;
+          const varName = `${spellPrefix}__BEARER_TOKEN`;
           authConfig.token = `\${${varName}}`;
           envVarsToWrite[varName] = originalAuthToken;
         }
       } else if (options.auth.type === 'basic') {
-        const originalUsername = options.auth.username;
-        const originalPassword = options.auth.password;
-
-        if (originalUsername != null && originalUsername.trim() !== '') {
-          if (originalUsername.includes('${')) {
-            authConfig.username = originalUsername;
+        // Use the preserved original values (before interactive prompts set placeholders)
+        if (originalAuthUsername != null && originalAuthUsername.trim() !== '') {
+          if (originalAuthUsername.includes('${')) {
+            authConfig.username = originalAuthUsername;
           } else {
             const varName = `${spellPrefix}__API_USERNAME`;
             authConfig.username = `\${${varName}}`;
-            envVarsToWrite[varName] = originalUsername;
+            envVarsToWrite[varName] = originalAuthUsername;
           }
         }
-        if (originalPassword != null && originalPassword.trim() !== '') {
-          if (originalPassword.includes('${')) {
-            authConfig.password = originalPassword;
+        if (originalAuthPassword != null && originalAuthPassword.trim() !== '') {
+          if (originalAuthPassword.includes('${')) {
+            authConfig.password = originalAuthPassword;
           } else {
             const varName = `${spellPrefix}__API_PASSWORD`;
             authConfig.password = `\${${varName}}`;
-            envVarsToWrite[varName] = originalPassword;
+            envVarsToWrite[varName] = originalAuthPassword;
           }
         }
       } else if (options.auth.type === 'client_credentials') {
@@ -935,20 +991,13 @@ export async function createCommand(options: CreateOptions): Promise<void> {
     // Write literal values to ~/.grimoire/.env file
     if (Object.keys(envVarsToWrite).length > 0) {
       const { EnvManager } = await import('../../infrastructure/env-manager');
-      const { logger } = await import('../../utils/logger');
       const envPath = join(spellDir, '.env');
       const envManager = new EnvManager(envPath);
       await envManager.load();
 
-      // Log env writes for debugging (mask values for security)
       for (const [key, value] of Object.entries(envVarsToWrite)) {
-        // Mask credential value for security - show only length
-        const maskedValue =
-          value.length > 8 ? `${'*'.repeat(8)}... (${value.length} chars)` : '***';
-        logger.info('ENV', `Writing ${key}=${maskedValue}`);
         await envManager.set(key, value);
       }
-
       /* eslint-disable no-console */
       console.log(`\n${formatSuccess('Environment variables saved:')} ~/.grimoire/.env`);
       console.log(`   ${dim('Variables:')} ${Object.keys(envVarsToWrite).join(', ')}`);
@@ -994,6 +1043,14 @@ export async function createCommand(options: CreateOptions): Promise<void> {
       }
     }
     console.log(`\n${formatInfo(`Validate your spell: grimoire validate ${filePath}`)}`);
+
+    // Force exit to prevent hanging due to MCP SDK resource leak
+    // The SDK's StreamableHTTPClientTransport doesn't fully destroy HTTPS connections
+    // after transport.close(). We add a delay in mcp-probe.ts for graceful cleanup,
+    // but force exit here as final safeguard since this is a CLI command (not a server).
+    // Diagnostic proof: 4 TLSWRAP + 1 Timeout persist after close() - see debug-hanging-simple.js
+    // This is acceptable for CLI tools (npm, git, pnpm all do this).
+    process.exit(0);
     /* eslint-enable no-console */
   } catch (error) {
     // Format error messages but re-throw for CLI wrapper to handle

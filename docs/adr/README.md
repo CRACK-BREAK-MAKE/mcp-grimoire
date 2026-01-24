@@ -20,7 +20,8 @@ This directory contains Architecture Decision Records (ADRs) for MCP Grimoire.
 | [0012](0012-bearer-token-authentication-first.md)             | Prioritize Bearer Token Authentication Over OAuth               | Proposed | 2026-01-15 |
 | [0013](0013-environment-variable-expansion-for-secrets.md)    | Use Environment Variable Expansion for Secrets in Spell Configs | Proposed | 2026-01-15 |
 | [0014](0014-three-phase-oauth-implementation.md)              | Three-Phase OAuth Implementation Strategy                       | Proposed | 2026-01-15 |
-| [0015](0015-environment-variable-resolution-with-env-file.md) | Environment Variable Resolution with .env File                  | Accepted | 2026-01-19 |
+| [0015](0015-environment-variable-resolution-with-env-file.md) | Environment Variable Resolution with .env File                  | Accepted | 2026-01-22 |
+| [0016](0016-process-exit-in-cli-with-test-compatibility.md)   | Handle process.exit in CLI Commands with Test Compatibility     | Accepted | 2026-01-24 |
 
 ## By Category
 
@@ -56,9 +57,13 @@ This directory contains Architecture Decision Records (ADRs) for MCP Grimoire.
 - ADR-0008: Use ~/.grimoire Path (Claude Code Convention)
 - ADR-0015: Environment Variable Resolution with .env File
 
+### Testing & Quality
+
+- ADR-0016: Handle process.exit in CLI Commands with Test Compatibility
+
 ## Status
 
-- **Accepted**: 11
+- **Accepted**: 12
 - **Proposed**: 4
 - **Deprecated**: 0
 - **Superseded**: 0

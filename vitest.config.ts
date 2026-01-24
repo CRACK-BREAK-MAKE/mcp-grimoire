@@ -23,6 +23,8 @@ export default defineConfig({
           globals: true,
           testTimeout: 10000, // Unit tests should be fast
           hookTimeout: 10000,
+          // Setup file that runs before each test to mock process.exit
+          setupFiles: ['./src/cli/__tests__/helpers/setup-test-env.ts'],
         },
       },
       // Integration tests project
@@ -44,6 +46,8 @@ export default defineConfig({
           hookTimeout: 60000,
           // Global setup/teardown for backup/restore
           globalSetup: './src/cli/__tests__/helpers/global-setup-integration.ts',
+          // Setup file that runs before each test to mock process.exit
+          setupFiles: ['./src/cli/__tests__/helpers/setup-test-env.ts'],
         },
       },
     ],

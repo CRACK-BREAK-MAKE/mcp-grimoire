@@ -163,6 +163,7 @@ interface PromptOptions {
   message: string;
   default?: string;
   validate?: (value: string) => string | true;
+  hint?: string; // Optional hint shown above the prompt
 }
 
 interface SelectOption {
@@ -199,6 +200,11 @@ export async function text(options: PromptOptions): Promise<string> {
   const rl = createInterface();
 
   return new Promise((resolve) => {
+    // Show hint if provided
+    if (options.hint != null && options.hint !== '') {
+      process.stdout.write(`${dim(options.hint)}\n`);
+    }
+
     const promptText = formatPrompt(options.message);
     const defaultText =
       options.default != null && options.default !== '' ? ` ${formatDefault(options.default)}` : '';

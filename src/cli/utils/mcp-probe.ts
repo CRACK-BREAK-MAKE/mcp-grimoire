@@ -164,8 +164,9 @@ export async function probeMCPServer(
     );
 
     // Set up timeout for connection
+    let connectionTimeoutHandle: NodeJS.Timeout | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
+      connectionTimeoutHandle = setTimeout(() => {
         reject(new Error(`Server connection timeout after ${timeoutMs}ms`));
       }, timeoutMs);
     });
@@ -178,8 +179,10 @@ export async function probeMCPServer(
 
     try {
       await Promise.race([client.connect(transport!), timeoutPromise]);
+      if (connectionTimeoutHandle) clearTimeout(connectionTimeoutHandle); // Clear timeout on success
       logger.info('PROBE', '✓ Connected successfully!');
     } catch (connectError: unknown) {
+      if (connectionTimeoutHandle) clearTimeout(connectionTimeoutHandle); // Clear timeout on error
       const error = connectError instanceof Error ? connectError : undefined;
       logger.error('PROBE', '✗ Connection failed', error);
       throw connectError;
@@ -188,15 +191,21 @@ export async function probeMCPServer(
     // Get tools list
     logger.info('PROBE', '=== REQUESTING TOOLS LIST ===');
     let toolsResponse;
+    let toolsTimeoutHandle: NodeJS.Timeout | undefined;
     try {
       toolsResponse = await Promise.race([
         client.listTools(),
         new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Tools list timeout')), timeoutMs / 2);
+          toolsTimeoutHandle = setTimeout(
+            () => reject(new Error('Tools list timeout')),
+            timeoutMs / 2
+          );
         }),
       ]);
+      if (toolsTimeoutHandle) clearTimeout(toolsTimeoutHandle); // Clear timeout on success
       logger.info('PROBE', '✓ Tools list received', { count: toolsResponse.tools.length });
     } catch (toolsError: unknown) {
+      if (toolsTimeoutHandle) clearTimeout(toolsTimeoutHandle); // Clear timeout on error
       const error = toolsError instanceof Error ? toolsError : undefined;
       logger.error('PROBE', '✗ Tools list failed', error);
       throw toolsError;
@@ -272,8 +281,18 @@ export async function probeMCPServer(
 
     try {
       if (transport) {
-        // Close transport which will kill the child process
         await transport.close();
+
+        // WORKAROUND: MCP SDK resource leak with HTTP/SSE transports
+        // The SDK's StreamableHTTPClientTransport uses fetch() which creates persistent
+        // HTTPS connections (TLSWRAP). The SDK's close() method only aborts requests
+        // but doesn't destroy the underlying TCP/TLS sockets.
+        // Add delay to allow Node.js runtime a chance to garbage collect connections.
+        // Diagnostic evidence: 4 TLSWRAP + 1 Timeout remain active after close()
+        // See: debug-hanging-simple.js for proof
+        if (transportType === 'http' || transportType === 'sse') {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
       }
     } catch {
       // Ignore cleanup errors

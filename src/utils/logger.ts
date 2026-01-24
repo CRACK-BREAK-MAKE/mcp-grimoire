@@ -67,7 +67,7 @@ type Component =
   | 'CACHE' // Embedding cache
   | 'AUTH' // Authentication (Bearer, OAuth, Basic)
   | 'ENV' // Environment variable resolution
-  | 'TEST'; // Environment variable resolution
+  | 'TEST'; // Test mode logging
 
 interface LogContext {
   [key: string]: unknown;
