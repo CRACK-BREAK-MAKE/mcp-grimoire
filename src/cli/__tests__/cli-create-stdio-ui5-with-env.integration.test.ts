@@ -80,7 +80,9 @@ import {
   validateEnvFileLiterals,
 } from './helpers/spell-validator';
 import { createCommand, type CreateOptions } from '../commands/create';
+import * as os from 'os';
 
+const isWindows = os.platform() === 'win32';
 describe('CLI create - stdio UI5 with env', () => {
   const testSpellName = 'ui5-mcp';
   let grimoireDir: string;

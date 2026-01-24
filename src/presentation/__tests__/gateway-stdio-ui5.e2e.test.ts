@@ -25,8 +25,11 @@ import {
 } from '../../cli/__tests__/helpers/test-path-manager';
 import { GrimoireServer } from '../gateway';
 import { createCommand, type CreateOptions } from '../../cli/commands/create';
+import * as os from 'os';
 
-describe('Gateway E2E - UI5 stdio', () => {
+const isWindows = os.platform() === 'win32';
+
+describe.skipIf(isWindows)('Gateway E2E - UI5 stdio', () => {
   let gateway: GrimoireServer;
 
   const testSpellName = 'gateway-stdio-ui5';

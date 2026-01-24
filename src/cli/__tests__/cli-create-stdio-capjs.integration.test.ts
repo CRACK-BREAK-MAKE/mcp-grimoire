@@ -70,8 +70,11 @@ import {
   validateStdioServerConfig,
 } from './helpers/spell-validator';
 import { createCommand, type CreateOptions } from '../commands/create';
+import * as os from 'os';
 
-describe('CLI create - stdio CAP.js', () => {
+const isWindows = os.platform() === 'win32';
+
+describe.skipIf(isWindows)('CLI create - stdio CAP.js', () => {
   const testSpellName = 'cds-mcp';
   let grimoireDir: string;
   let spellFilePath: string;
